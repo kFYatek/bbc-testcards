@@ -13,6 +13,7 @@ class ScalingMode(enum.Enum):
     VERTICAL = 1
     CANONICAL = 2
     SQUARE_PIXELS = 3
+    PAL_4FSC = 4
 
 
 class ColorConversion(enum.Enum):
@@ -77,6 +78,15 @@ def get_scaling_dimensions(scaling_mode: ScalingMode, original_resolution: Origi
             return ScalingDimensions(1920, 1480, 518, 378)
         elif original_resolution is OriginalResolution.SYSA54:
             return ScalingDimensions(1400, 490, 486, 378)
+    elif scaling_mode is ScalingMode.PAL_4FSC:
+        if original_resolution is OriginalResolution.PAL169:
+            return ScalingDimensions(12288, 5902, 946, 576)
+        elif original_resolution is OriginalResolution.PAL43:
+            return ScalingDimensions(9216, 5902, 946, 576)
+        elif original_resolution is OriginalResolution.SYSA43:
+            return ScalingDimensions(9216, 5902, 946, 378)
+        elif original_resolution is OriginalResolution.SYSA54:
+            return ScalingDimensions(8640, 5902, 946, 378)
 
 
 CARDS = [TestCardDefinition('Test Card X', 600, OriginalResolution.HD1080),

@@ -78,35 +78,35 @@ def resample_with_mirrors(data: numpy.array, new_size: int, axis: int = -1):
     return data
 
 
-if width == 1920 and height == 1080:
-    dimensions = None
-    if CARD is not None:
-        dimensions = common.get_scaling_dimensions(SCALE, CARD.mode)
+dimensions = None
+src_left = 0.0
+src_top = 0.0
+if CARD is not None:
+    dimensions = common.get_scaling_dimensions(SCALE, CARD.mode)
+    if width >= common.get_scaling_dimensions(common.ScalingMode.VERTICAL, CARD.mode).crop_w:
         src_left = CARD.src_left
+    if dimensions is not None and height != dimensions.scale_h:
         src_top = CARD.src_top
-    else:
-        src_left = 0.0
-        src_top = 0.0
 
-    if dimensions is not None:
-        while dimensions.precrop_w > yuvdata.shape[2]:
-            reversed = numpy.flip(yuvdata, axis=2)
-            yuvdata = numpy.concatenate([reversed, yuvdata, reversed], axis=2)
-        if dimensions.precrop_w != yuvdata.shape[2]:
-            yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.precrop_w) // 2:]
-            yuvdata = yuvdata[:, :, :dimensions.precrop_w]
-        src_left += dimensions.precrop_w / (2 * dimensions.scale_w) - 0.5
-        src_top += 1080.0 / (2 * dimensions.scale_h) - 0.5
+if dimensions is not None:
+    while dimensions.precrop_w > yuvdata.shape[2]:
+        reversed = numpy.flip(yuvdata, axis=2)
+        yuvdata = numpy.concatenate([reversed, yuvdata, reversed], axis=2)
+    if dimensions.precrop_w != yuvdata.shape[2]:
+        yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.precrop_w) // 2:]
+        yuvdata = yuvdata[:, :, :dimensions.precrop_w]
+    src_left += yuvdata.shape[2] / (2 * dimensions.scale_w) - 0.5
+    src_top += yuvdata.shape[1] / (2 * dimensions.scale_h) - 0.5
 
-    yuvdata = apply_shift(yuvdata, src_left, axis=2)
-    yuvdata = apply_shift(yuvdata, src_top, axis=1)
+yuvdata = apply_shift(yuvdata, src_left, axis=2)
+yuvdata = apply_shift(yuvdata, src_top, axis=1)
 
-    if dimensions is not None:
-        yuvdata = resample_with_mirrors(yuvdata, dimensions.scale_w, axis=2)
-        yuvdata = resample_with_mirrors(yuvdata, dimensions.scale_h, axis=1)
-        if dimensions.crop_w != dimensions.scale_w:
-            yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.crop_w) // 2:]
-            yuvdata = yuvdata[:, :, :dimensions.crop_w]
+if dimensions is not None:
+    yuvdata = resample_with_mirrors(yuvdata, dimensions.scale_w, axis=2)
+    yuvdata = resample_with_mirrors(yuvdata, dimensions.scale_h, axis=1)
+    if dimensions.crop_w != dimensions.scale_w:
+        yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.crop_w) // 2:]
+        yuvdata = yuvdata[:, :, :dimensions.crop_w]
 
 if COLORSPACE is common.ColorSpace.BT601:
     convmatrix = numpy.array(

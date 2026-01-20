@@ -80,8 +80,14 @@ if dimensions is not None:
     src_height = clip.height
     if SCALER[0:2] == 'De':
         scaler = getattr(vapoursynth.core.descale, SCALER)
-        src_left *= -dimensions.scale_w / dimensions.precrop_w
-        src_top *= -dimensions.scale_h / clip.height
+        if dimensions.scale_w == dimensions.precrop_w:
+            src_left = 0
+        else:
+            src_left *= -dimensions.scale_w / dimensions.precrop_w
+        if dimensions.scale_h == clip.height:
+            src_top = 0
+        else:
+            src_top *= -dimensions.scale_h / clip.height
         src_width = None
         src_height = None
     else:
