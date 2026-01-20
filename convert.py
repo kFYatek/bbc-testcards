@@ -21,7 +21,9 @@ elif len(data) % (12 * 378) == 0 and len(data) // (12 * 378) >= 486:
     width = len(data) // (12 * 378)
     height = 378
 
-yuvdata = numpy.ndarray((3, height, width), dtype='float32', buffer=bytearray(data))
+yuvdata_raw = numpy.ndarray((3, height, width), dtype='float32', buffer=bytearray(data))
+yuvdata = numpy.zeros(yuvdata_raw.shape)
+yuvdata[:, :, :] = yuvdata_raw
 
 try:
     COLORSPACE = common.ColorSpace(int(os.environ.get('COLORSPACE')))
