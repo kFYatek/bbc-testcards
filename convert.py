@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 import os
-import numpy
 
-import PIL
 import PIL.Image
+import numpy
 
 with open('/dev/stdin', 'rb') as f:
     data = f.read()
@@ -21,15 +20,15 @@ elif len(data) % (12 * 378) == 0 and len(data) // (12 * 378) >= 486:
 chlen = len(data) // 3
 
 ydata = data[:chlen]
-udata = data[chlen:2*chlen]
-vdata = data[2*chlen:3*chlen]
+udata = data[chlen:2 * chlen]
+vdata = data[2 * chlen:3 * chlen]
 
 y = numpy.ndarray((height, width), dtype='float32', buffer=bytearray(ydata))
 u = numpy.ndarray((height, width), dtype='float32', buffer=bytearray(udata))
 v = numpy.ndarray((height, width), dtype='float32', buffer=bytearray(vdata))
 
-COLORSPACE=int(os.environ.get('COLORSPACE') or '709')
-LIMITED=int(os.environ.get('LIMITED') or '0')
+COLORSPACE = int(os.environ.get('COLORSPACE') or '709')
+LIMITED = int(os.environ.get('LIMITED') or '0')
 
 if COLORSPACE == 601:
     r = y + 1.402 * v
