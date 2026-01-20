@@ -25,15 +25,7 @@ elif len(data) % (12 * 378) == 0 and len(data) // (12 * 378) >= 486:
     width = len(data) // (12 * 378)
     height = 378
 
-chlen = len(data) // 3
-
-ydata = data[:chlen]
-udata = data[chlen:2 * chlen]
-vdata = data[2 * chlen:3 * chlen]
-
-y = numpy.ndarray((height, width), dtype='float32', buffer=bytearray(ydata))
-u = numpy.ndarray((height, width), dtype='float32', buffer=bytearray(udata))
-v = numpy.ndarray((height, width), dtype='float32', buffer=bytearray(vdata))
+yuvdata = numpy.ndarray((3, height, width), dtype='float32', buffer=bytearray(data))
 
 try:
     COLORSPACE = ColorSpace(int(os.environ.get('COLORSPACE')))
@@ -42,32 +34,25 @@ except Exception:
 LIMITED = bool(int(os.environ.get('LIMITED') or '0'))
 
 if COLORSPACE is ColorSpace.BT601:
-    r = y + 1.402 * v
-    g = y - 0.34413628620102216 * u - 0.7141362862010221 * v
-    b = y + 1.772 * u
+    convmatrix = numpy.array(
+        [[1.0, 0.0, 1.402], [1.0, -0.34413628620102216, -0.7141362862010221], [1.0, 1.772, 0.0]])
 elif COLORSPACE is ColorSpace.BT709:
-    r = y + 1.5748 * v
-    g = y - 0.18732427293064877 * u - 0.4681242729306488 * v
-    b = y + 1.8556 * u
+    convmatrix = numpy.array(
+        [[1.0, 0.0, 1.5748], [1.0, -0.18732427293064877, -0.4681242729306488], [1.0, 1.8556, 0.0]])
+
+rgbdata = numpy.matvec(convmatrix, yuvdata, axes=[(0, 1), (0), (2)])
 
 if LIMITED:
-    r = 219.0 * r + 16.0
-    g = 219.0 * g + 16.0
-    b = 219.0 * b + 16.0
+    rgbdata *= 219.0
+    rgbdata += 16.0
 else:
-    r = 255.0 * r
-    g = 255.0 * g
-    b = 255.0 * b
+    rgbdata *= 255.0
 
-r = numpy.round(numpy.minimum(numpy.maximum(r, 0.0), 255.0))
-g = numpy.round(numpy.minimum(numpy.maximum(g, 0.0), 255.0))
-b = numpy.round(numpy.minimum(numpy.maximum(b, 0.0), 255.0))
+rgbdata = numpy.round(numpy.minimum(numpy.maximum(rgbdata, 0.0), 255.0))
 
 outbuf = bytearray(len(data) // 4)
 output = numpy.ndarray((height, width, 3), dtype='uint8', buffer=outbuf)
-output[:, :, 0] = r
-output[:, :, 1] = g
-output[:, :, 2] = b
+output[:, :, :] = rgbdata
 
 im = PIL.Image.frombuffer('RGB', (width, height), outbuf)
 with open('/dev/stdout', 'wb') as f:
