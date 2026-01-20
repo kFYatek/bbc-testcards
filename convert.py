@@ -45,12 +45,12 @@ def apply_shift(data: numpy.array, shift: float, axis: int = -1):
         axis = len(data.shape) + axis
     intshift = int(shift)
     if intshift != 0:
-        data = numpy.roll(data, intshift, axis=axis)
+        data = numpy.roll(data, -intshift, axis=axis)
         data = numpy.swapaxes(data, 0, axis)
         if intshift > 0:
-            data[0:intshift] = data[intshift]
+            data[-intshift:] = data[-intshift - 1]
         else:
-            data[intshift:] = data[intshift - 1]
+            data[0:-intshift] = data[-intshift]
         data = numpy.swapaxes(data, 0, axis)
     shift = shift - intshift
     if shift != 0:
@@ -58,7 +58,7 @@ def apply_shift(data: numpy.array, shift: float, axis: int = -1):
         data = numpy.pad(data, [(0, 0)] * (len(data.shape) - 1) + [(1, 1)], mode='edge')
         fft = scipy.fft.rfft(data, axis=-1)
         fft *= numpy.exp(
-            numpy.array(range(fft.shape[-1])) * (-2.0j * shift * numpy.pi / data.shape[-1]))
+            numpy.array(range(fft.shape[-1])) * (2.0j * shift * numpy.pi / data.shape[-1]))
         data = scipy.fft.irfft(fft, axis=-1)
         data = numpy.delete(data, [0, -1], axis=-1)
         data = numpy.swapaxes(data, len(data.shape) - 1, axis)
@@ -95,8 +95,8 @@ if width == 1920 and height == 1080:
         if dimensions.precrop_w != yuvdata.shape[2]:
             yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.precrop_w) // 2:]
             yuvdata = yuvdata[:, :, :dimensions.precrop_w]
-        src_left -= dimensions.precrop_w / (2 * dimensions.scale_w) - 0.5
-        src_top -= 1080.0 / (2 * dimensions.scale_h) - 0.5
+        src_left += dimensions.precrop_w / (2 * dimensions.scale_w) - 0.5
+        src_top += 1080.0 / (2 * dimensions.scale_h) - 0.5
 
     yuvdata = apply_shift(yuvdata, src_left, axis=2)
     yuvdata = apply_shift(yuvdata, src_top, axis=1)

@@ -74,8 +74,8 @@ clip = vapoursynth.core.std.ShufflePlanes([yclip, uclip, vclip], planes=[0, 0, 0
 dimensions = common.get_scaling_dimensions(SCALE, CARD.mode)
 
 if dimensions is not None:
-    src_left = -CARD.src_left
-    src_top = -CARD.src_top
+    src_left = CARD.src_left
+    src_top = CARD.src_top
     src_width = dimensions.precrop_w
     src_height = clip.height
     if SCALER[0:2] == 'De':
