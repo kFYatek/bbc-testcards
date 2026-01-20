@@ -1,11 +1,11 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
 
 import scipy.interpolate
 import vapoursynth
-from vapoursynth import core
 
-clip = core.bs.VideoSource(source='This Is BBC HD_20130326_0120.ts')
+clip = vapoursynth.core.bs.VideoSource(source='This Is BBC HD_20130326_0120.ts')
 
 CARDS = {  #
     0: ('Test Card X', 600, 0, 0.0, 0.0),  #
@@ -46,7 +46,7 @@ else:
     SCALE_HORIZ = SCALE - 1
 
 # Nonlinearity precorrection
-clip = core.resize.Point(clip, format=vapoursynth.YUV444P8)
+clip = vapoursynth.core.resize.Point(clip, format=vapoursynth.YUV444P8)
 yclip, uclip, vclip = clip.std.SplitPlanes()
 
 y_spline = scipy.interpolate.CubicSpline(
@@ -74,17 +74,17 @@ def correct_uv(x):
     return result / 224.0
 
 
-yclip = core.std.Lut(yclip, function=correct_y, floatout=True)
-uclip = core.std.Lut(uclip, function=correct_uv, floatout=True)
-vclip = core.std.Lut(vclip, function=correct_uv, floatout=True)
+yclip = vapoursynth.core.std.Lut(yclip, function=correct_y, floatout=True)
+uclip = vapoursynth.core.std.Lut(uclip, function=correct_uv, floatout=True)
+vclip = vapoursynth.core.std.Lut(vclip, function=correct_uv, floatout=True)
 
-clip = core.std.ShufflePlanes([yclip, uclip, vclip], planes=[0, 0, 0], colorfamily=vapoursynth.YUV,
-                              prop_src=clip)
+clip = vapoursynth.core.std.ShufflePlanes([yclip, uclip, vclip], planes=[0, 0, 0],
+                                          colorfamily=vapoursynth.YUV, prop_src=clip)
 
 if MODE == 1:
-    rclip = core.std.FlipHorizontal(clip)
-    clip = core.std.StackHorizontal([rclip, clip, rclip])
-    clip = core.std.CropAbs(clip, 2560, 1080, left=1600)
+    rclip = vapoursynth.core.std.FlipHorizontal(clip)
+    clip = vapoursynth.core.std.StackHorizontal([rclip, clip, rclip])
+    clip = vapoursynth.core.std.CropAbs(clip, 2560, 1080, left=1600)
 precrop_w = None
 if MODE == 1 or MODE == 2 or MODE == 3:
     if SCALE_HORIZ == 1:
@@ -127,24 +127,26 @@ elif MODE == 3 or MODE == 4:
 
 if MODE != 0:
     if precrop_w is not None:
-        clip = core.std.CropAbs(clip, precrop_w, 1080, left=(clip.width - precrop_w) // 2)
-    clip = core.descale.Delanczos(clip, scale_w, height, src_left=SRC_LEFT * scale_w / clip.width,
-                                  src_top=SRC_TOP * height / clip.height)
+        clip = vapoursynth.core.std.CropAbs(clip, precrop_w, 1080,
+                                            left=(clip.width - precrop_w) // 2)
+    clip = vapoursynth.core.descale.Delanczos(clip, scale_w, height,
+                                              src_left=SRC_LEFT * scale_w / clip.width,
+                                              src_top=SRC_TOP * height / clip.height)
     if crop_w is not None:
-        clip = core.std.CropAbs(clip, crop_w, height, left=(scale_w - crop_w) // 2)
+        clip = vapoursynth.core.std.CropAbs(clip, crop_w, height, left=(scale_w - crop_w) // 2)
 
 if COLORCONV >= 3:
-    clip = core.std.SetFrameProps(clip, _Matrix=vapoursynth.MATRIX_BT470_BG,
-                                  _Transfer=vapoursynth.TRANSFER_BT601,
-                                  _Primaries=vapoursynth.PRIMARIES_BT470_BG)
-    clip = core.resize.Point(clip, matrix=vapoursynth.MATRIX_BT709,
-                             transfer=vapoursynth.TRANSFER_BT709,
-                             primaries=vapoursynth.PRIMARIES_BT709)
+    clip = vapoursynth.core.std.SetFrameProps(clip, _Matrix=vapoursynth.MATRIX_BT470_BG,
+                                              _Transfer=vapoursynth.TRANSFER_BT601,
+                                              _Primaries=vapoursynth.PRIMARIES_BT470_BG)
+    clip = vapoursynth.core.resize.Point(clip, matrix=vapoursynth.MATRIX_BT709,
+                                         transfer=vapoursynth.TRANSFER_BT709,
+                                         primaries=vapoursynth.PRIMARIES_BT709)
 elif COLORCONV >= 2 or (COLORCONV >= 1 and MODE != 0):
-    clip = core.resize.Point(clip, matrix=vapoursynth.MATRIX_BT470_BG,
-                             transfer=vapoursynth.TRANSFER_BT601,
-                             primaries=vapoursynth.PRIMARIES_BT470_BG)
+    clip = vapoursynth.core.resize.Point(clip, matrix=vapoursynth.MATRIX_BT470_BG,
+                                         transfer=vapoursynth.TRANSFER_BT601,
+                                         primaries=vapoursynth.PRIMARIES_BT470_BG)
 
 # Output
-clip = core.resize.Point(clip, format=vapoursynth.YUV444PS)
+clip = vapoursynth.core.resize.Point(clip, format=vapoursynth.YUV444PS)
 clip.set_output()
