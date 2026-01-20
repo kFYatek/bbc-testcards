@@ -25,6 +25,9 @@ try:
 except Exception:
     COLORCONV = common.ColorConversion.NONE
 
+SCALER = os.environ.get('SCALER') or 'Lanczos'
+SCALER = SCALER[0].upper() + SCALER[1:].lower()
+
 sys.stderr.write(f'Rendering {CARD.name}\n')
 sys.stderr.write(f'Scaling mode: {SCALE}\n')
 sys.stderr.write(f'Color conversion mode: {COLORCONV}\n')
@@ -71,15 +74,27 @@ clip = vapoursynth.core.std.ShufflePlanes([yclip, uclip, vclip], planes=[0, 0, 0
 dimensions = common.get_scaling_dimensions(SCALE, CARD.mode)
 
 if dimensions is not None:
+    src_left = -CARD.src_left
+    src_top = -CARD.src_top
+    src_width = dimensions.precrop_w
+    src_height = clip.height
+    if SCALER[0:2] == 'De':
+        scaler = getattr(vapoursynth.core.descale, SCALER)
+        src_left *= -dimensions.scale_w / dimensions.precrop_w
+        src_top *= -dimensions.scale_h / clip.height
+        src_width = None
+        src_height = None
+    else:
+        scaler = getattr(vapoursynth.core.resize, SCALER)
+
     while dimensions.precrop_w > clip.width:
         rclip = vapoursynth.core.std.FlipHorizontal(clip)
         clip = vapoursynth.core.std.StackHorizontal([rclip, clip, rclip])
     if dimensions.precrop_w != clip.width:
         clip = vapoursynth.core.std.CropAbs(clip, dimensions.precrop_w, clip.height,
                                             left=(clip.width - dimensions.precrop_w) // 2)
-    clip = vapoursynth.core.descale.Delanczos(clip, dimensions.scale_w, dimensions.scale_h,
-                                              src_left=CARD.src_left * dimensions.scale_w / clip.width,
-                                              src_top=CARD.src_top * dimensions.scale_h / clip.height)
+    clip = scaler(clip, dimensions.scale_w, dimensions.scale_h, src_left=src_left, src_top=src_top,
+                  src_width=src_width, src_height=src_height)
     if dimensions.crop_w is not None:
         clip = vapoursynth.core.std.CropAbs(clip, dimensions.crop_w, clip.height,
                                             left=(clip.width - dimensions.crop_w) // 2)
