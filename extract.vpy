@@ -26,7 +26,12 @@ except Exception:
     COLORCONV = common.ColorConversion.NONE
 
 SCALER = os.environ.get('SCALER') or 'Debilinear'
-SCALER = SCALER[0].upper() + SCALER[1:].lower()
+
+SCALER_H = os.environ.get('SCALER_H') or SCALER
+SCALER_H = SCALER_H[0].upper() + SCALER_H[1:].lower()
+
+SCALER_V = os.environ.get('SCALER_V') or SCALER
+SCALER_V = SCALER_V[0].upper() + SCALER_V[1:].lower()
 
 sys.stderr.write(f'Rendering {CARD.name}\n')
 sys.stderr.write(f'Scaling mode: {SCALE}\n')
@@ -78,20 +83,24 @@ if dimensions is not None:
     src_top = CARD.src_top
     src_width = dimensions.precrop_w
     src_height = clip.height
-    if SCALER[0:2] == 'De':
-        scaler = getattr(vapoursynth.core.descale, SCALER)
+    if SCALER_H[0:2] == 'De':
+        scaler_h = getattr(vapoursynth.core.descale, SCALER_H)
         if dimensions.scale_w == dimensions.precrop_w:
             src_left = 0
         else:
             src_left *= -dimensions.scale_w / dimensions.precrop_w
+        src_width = None
+    else:
+        scaler_h = getattr(vapoursynth.core.resize, SCALER_H)
+    if SCALER_V[0:2] == 'De':
+        scaler_v = getattr(vapoursynth.core.descale, SCALER_V)
         if dimensions.scale_h == clip.height:
             src_top = 0
         else:
             src_top *= -dimensions.scale_h / clip.height
-        src_width = None
         src_height = None
     else:
-        scaler = getattr(vapoursynth.core.resize, SCALER)
+        scaler_v = getattr(vapoursynth.core.resize, SCALER_V)
 
     while dimensions.precrop_w > clip.width:
         rclip = vapoursynth.core.std.FlipHorizontal(clip)
@@ -99,8 +108,14 @@ if dimensions is not None:
     if dimensions.precrop_w != clip.width:
         clip = vapoursynth.core.std.CropAbs(clip, dimensions.precrop_w, clip.height,
                                             left=(clip.width - dimensions.precrop_w) // 2)
-    clip = scaler(clip, dimensions.scale_w, dimensions.scale_h, src_left=src_left, src_top=src_top,
-                  src_width=src_width, src_height=src_height)
+    if SCALER_H == SCALER_V:
+        clip = scaler_v(clip, dimensions.scale_w, dimensions.scale_h, src_left=src_left,
+                        src_top=src_top, src_width=src_width, src_height=src_height)
+    else:
+        clip = scaler_h(clip, dimensions.scale_w, clip.height, src_left=src_left,
+                        src_width=src_width)
+        clip = scaler_v(clip, clip.width, dimensions.scale_h, src_top=src_top,
+                        src_height=src_height)
     if dimensions.crop_w is not None:
         clip = vapoursynth.core.std.CropAbs(clip, dimensions.crop_w, clip.height,
                                             left=(clip.width - dimensions.crop_w) // 2)
