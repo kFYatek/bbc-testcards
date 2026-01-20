@@ -38,6 +38,47 @@ class TestCardDefinition(typing.NamedTuple):
     src_top: float = 0.0
 
 
+class ScalingDimensions(typing.NamedTuple):
+    precrop_w: int
+    scale_w: int
+    crop_w: int
+    scale_h: int
+
+
+def get_scaling_dimensions(scaling_mode: ScalingMode, original_resolution: OriginalResolution) -> \
+        typing.Optional[ScalingDimensions]:
+    if scaling_mode is ScalingMode.NONE or original_resolution is OriginalResolution.HD1080:
+        return None
+
+    if scaling_mode is ScalingMode.VERTICAL:
+        if original_resolution is OriginalResolution.PAL169:
+            return ScalingDimensions(2560, 2560, 1970, 576)
+        elif original_resolution is OriginalResolution.PAL43:
+            return ScalingDimensions(1920, 1920, 1478, 576)
+        elif original_resolution is OriginalResolution.SYSA43:
+            return ScalingDimensions(1920, 1920, 1478, 378)
+        elif original_resolution is OriginalResolution.SYSA54:
+            return ScalingDimensions(1920, 1920, 1386, 378)
+    elif scaling_mode is ScalingMode.CANONICAL:
+        if original_resolution is OriginalResolution.PAL169:
+            return ScalingDimensions(2560, 936, 720, 576)
+        elif original_resolution is OriginalResolution.PAL43:
+            return ScalingDimensions(1920, 936, 720, 576)
+        elif original_resolution is OriginalResolution.SYSA43:
+            return ScalingDimensions(1920, 936, 720, 378)
+        elif original_resolution is OriginalResolution.SYSA54:
+            return ScalingDimensions(1400, 728, 720, 378)
+    elif scaling_mode is ScalingMode.SQUARE_PIXELS:
+        if original_resolution is OriginalResolution.PAL169:
+            return ScalingDimensions(1980, 1056, 1052, 576)
+        elif original_resolution is OriginalResolution.PAL43:
+            return ScalingDimensions(1920, 1024, 788, 576)
+        elif original_resolution is OriginalResolution.SYSA43:
+            return ScalingDimensions(1920, 1480, 518, 378)
+        elif original_resolution is OriginalResolution.SYSA54:
+            return ScalingDimensions(1400, 490, 486, 378)
+
+
 CARDS = [TestCardDefinition('Test Card X', 600, OriginalResolution.HD1080),
          TestCardDefinition('Television Eye', 1557, OriginalResolution.HD1080),
          TestCardDefinition('Tuning Signal', 2030, OriginalResolution.SYSA54, -0.27, 1.867),

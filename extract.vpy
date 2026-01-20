@@ -68,61 +68,21 @@ vclip = vapoursynth.core.std.Lut(vclip, function=correct_uv, floatout=True)
 clip = vapoursynth.core.std.ShufflePlanes([yclip, uclip, vclip], planes=[0, 0, 0],
                                           colorfamily=vapoursynth.YUV, prop_src=clip)
 
-if SCALE is not common.ScalingMode.NONE:
-    if CARD.mode is common.OriginalResolution.PAL169:
+dimensions = common.get_scaling_dimensions(SCALE, CARD.mode)
+
+if dimensions is not None:
+    while dimensions.precrop_w > clip.width:
         rclip = vapoursynth.core.std.FlipHorizontal(clip)
         clip = vapoursynth.core.std.StackHorizontal([rclip, clip, rclip])
-        clip = vapoursynth.core.std.CropAbs(clip, 2560, 1080, left=1600)
-    precrop_w = None
-    if CARD.mode in (common.OriginalResolution.PAL169, common.OriginalResolution.PAL43,
-                     common.OriginalResolution.SYSA43):
-        if SCALE is common.ScalingMode.CANONICAL:
-            scale_w = 936
-            crop_w = 720
-        elif SCALE is common.ScalingMode.SQUARE_PIXELS:
-            if CARD.mode is common.OriginalResolution.PAL169:
-                precrop_w = 1980
-                scale_w = 1056
-                crop_w = 1052
-            elif CARD.mode is common.OriginalResolution.PAL43:
-                scale_w = 1024
-                crop_w = 788
-            else:
-                precrop_w = 1480
-                scale_w = 518
-                crop_w = None
-        elif CARD.mode is common.OriginalResolution.PAL169:
-            scale_w = 2560
-            crop_w = 1970
-        else:
-            scale_w = 1920
-            crop_w = 1478
-    elif CARD.mode is common.OriginalResolution.SYSA54:
-        if SCALE is common.ScalingMode.VERTICAL:
-            scale_w = 1920
-            crop_w = 1386
-        else:
-            precrop_w = 1400
-            if SCALE is common.ScalingMode.CANONICAL:
-                scale_w = 728
-                crop_w = 720
-            elif SCALE is common.ScalingMode.SQUARE_PIXELS:
-                scale_w = 490
-                crop_w = 486
-    if CARD.mode in (common.OriginalResolution.PAL169, common.OriginalResolution.PAL43):
-        height = 576
-    elif CARD.mode in (common.OriginalResolution.SYSA43, common.OriginalResolution.SYSA54):
-        height = 378
-
-    if CARD.mode is not common.OriginalResolution.HD1080:
-        if precrop_w is not None:
-            clip = vapoursynth.core.std.CropAbs(clip, precrop_w, 1080,
-                                                left=(clip.width - precrop_w) // 2)
-        clip = vapoursynth.core.descale.Delanczos(clip, scale_w, height,
-                                                  src_left=CARD.src_left * scale_w / clip.width,
-                                                  src_top=CARD.src_top * height / clip.height)
-        if crop_w is not None:
-            clip = vapoursynth.core.std.CropAbs(clip, crop_w, height, left=(scale_w - crop_w) // 2)
+    if dimensions.precrop_w != clip.width:
+        clip = vapoursynth.core.std.CropAbs(clip, dimensions.precrop_w, clip.height,
+                                            left=(clip.width - dimensions.precrop_w) // 2)
+    clip = vapoursynth.core.descale.Delanczos(clip, dimensions.scale_w, dimensions.scale_h,
+                                              src_left=CARD.src_left * dimensions.scale_w / clip.width,
+                                              src_top=CARD.src_top * dimensions.scale_h / clip.height)
+    if dimensions.crop_w is not None:
+        clip = vapoursynth.core.std.CropAbs(clip, dimensions.crop_w, clip.height,
+                                            left=(clip.width - dimensions.crop_w) // 2)
 
 if COLORCONV is common.ColorConversion.FORCE601TO709:
     clip = vapoursynth.core.std.SetFrameProps(clip, _Matrix=vapoursynth.MATRIX_BT470_BG,
