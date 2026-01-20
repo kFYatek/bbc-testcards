@@ -25,7 +25,7 @@ try:
 except Exception:
     COLORCONV = common.ColorConversion.NONE
 
-SCALER = os.environ.get('SCALER') or 'Lanczos'
+SCALER = os.environ.get('SCALER') or 'Debilinear'
 SCALER = SCALER[0].upper() + SCALER[1:].lower()
 
 sys.stderr.write(f'Rendering {CARD.name}\n')
