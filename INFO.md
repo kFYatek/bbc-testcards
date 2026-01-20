@@ -92,6 +92,7 @@ Test Card J
 * Maybe use Test Card X for detail reconstruction
   * castellation colors are raw data in different formats (BT.601 vs. BT.709)
   * photograph colors are supposed to be properly converted
+* Animation reference: https://www.youtube.com/watch?v=IcN52H9x2oU
 
 Test Card F widescreen
 ----------------------

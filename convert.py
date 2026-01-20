@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import enum
 import os
 
 import PIL.Image
 import numpy
+
+
+class ColorSpace(enum.Enum):
+    BT601 = 601
+    BT709 = 709
+
 
 with open('/dev/stdin', 'rb') as f:
     data = f.read()
@@ -28,19 +35,22 @@ y = numpy.ndarray((height, width), dtype='float32', buffer=bytearray(ydata))
 u = numpy.ndarray((height, width), dtype='float32', buffer=bytearray(udata))
 v = numpy.ndarray((height, width), dtype='float32', buffer=bytearray(vdata))
 
-COLORSPACE = int(os.environ.get('COLORSPACE') or '709')
-LIMITED = int(os.environ.get('LIMITED') or '0')
+try:
+    COLORSPACE = ColorSpace(int(os.environ.get('COLORSPACE')))
+except Exception:
+    COLORSPACE = ColorSpace.BT709
+LIMITED = bool(int(os.environ.get('LIMITED') or '0'))
 
-if COLORSPACE == 601:
+if COLORSPACE is ColorSpace.BT601:
     r = y + 1.402 * v
     g = y - 0.34413628620102216 * u - 0.7141362862010221 * v
     b = y + 1.772 * u
-elif COLORSPACE == 709:
+elif COLORSPACE is ColorSpace.BT709:
     r = y + 1.5748 * v
     g = y - 0.18732427293064877 * u - 0.4681242729306488 * v
     b = y + 1.8556 * u
 
-if LIMITED > 0:
+if LIMITED:
     r = 219.0 * r + 16.0
     g = 219.0 * g + 16.0
     b = 219.0 * b + 16.0

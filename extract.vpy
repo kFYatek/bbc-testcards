@@ -1,49 +1,83 @@
 # -*- coding: utf-8 -*-
+import enum
 import os
 import sys
+import typing
 
 import scipy.interpolate
 import vapoursynth
 
 clip = vapoursynth.core.bs.VideoSource(source='This Is BBC HD_20130326_0120.ts')
 
-CARDS = {  #
-    0: ('Test Card X', 600, 0, 0.0, 0.0),  #
-    1: ('Television Eye', 1557, 0, 0.0, 0.0),  #
-    2: ('Tuning Signal', 2030, 4, -0.27, 1.867),  #
-    3: ('Circle and line', 2505, 0, 0.0, 0.0),  #
-    4: ('Test Card A', 3009, 3, 0.0, 1.5),  #
-    5: ('Test Card B', 3507, 3, -1.54, 1),  #
-    6: ('Test Card C', 4007, 3, 0.0, -0.867),  #
-    7: ('Test Card D', 4511, 3, 0.0, -0.867),  #
-    8: ('Test Card F (optical)', 5011, 2, -0.55, 1.0),  #
-    9: ('Test Card F (electronic)', 5515, 2, 0.5, 1.0),  #
-    10: ('Test Card J', 6015, 2, 0.0, 1.0),  #
-    11: ('Test Card F widescreen', 6517, 1, -1.35, 1.0),  #
-    12: ('Test Card W', 7017, 1, 0.0, 0.0),  #
-    13: ('Test Card 3D', 7988, 0, 0.0, 0.0),  #
-}
+
+class ScalingMode(enum.Enum):
+    NONE = 0
+    VERTICAL = 1
+    CANONICAL = 2
+    SQUARE_PIXELS = 3
+
+
+class ColorConversion(enum.Enum):
+    NONE = 0
+    AUTO = 1
+    FORCE601 = 2
+    FORCE601TO709 = 3
+
+
+class OriginalResolution(enum.Enum):
+    HD1080 = enum.auto()
+    PAL169 = enum.auto()
+    PAL43 = enum.auto()
+    SYSA43 = enum.auto()
+    SYSA54 = enum.auto()
+
+
+class TestCardDefinition(typing.NamedTuple):
+    name: str
+    frame: int
+    mode: OriginalResolution
+    src_left: float = 0.0
+    src_top: float = 0.0
+
+
+CARDS = [TestCardDefinition('Test Card X', 600, OriginalResolution.HD1080),
+         TestCardDefinition('Television Eye', 1557, OriginalResolution.HD1080),
+         TestCardDefinition('Tuning Signal', 2030, OriginalResolution.SYSA54, -0.27, 1.867),
+         TestCardDefinition('Circle and line', 2505, OriginalResolution.HD1080),
+         TestCardDefinition('Test Card A', 3009, OriginalResolution.SYSA43, 0.0, 1.5),
+         TestCardDefinition('Test Card B', 3507, OriginalResolution.SYSA43, -1.54, 1),
+         TestCardDefinition('Test Card C', 4007, OriginalResolution.SYSA43, 0.0, -0.867),
+         TestCardDefinition('Test Card D', 4511, OriginalResolution.SYSA43, 0.0, -0.867),
+         TestCardDefinition('Test Card F (optical)', 5011, OriginalResolution.PAL43, -0.55, 1.0),
+         TestCardDefinition('Test Card F (electronic)', 5515, OriginalResolution.PAL43, 0.5, 1.0),
+         TestCardDefinition('Test Card J', 6015, OriginalResolution.PAL169, 0.0, 1.0),
+         TestCardDefinition('Test Card F widescreen', 6517, OriginalResolution.PAL169, -1.35, 1.0),
+         TestCardDefinition('Test Card W', 7017, OriginalResolution.PAL169),
+         TestCardDefinition('Test Card 3D', 7988, OriginalResolution.HD1080), ]
 
 CARD = int(os.environ['CARD'])
-SCALE = int(os.environ.get('SCALE') or '2')
-# 0: don't scale; 1: scale vertical only; 2: scale to canonical sample rate; 3: scale to square pixels
-CLAMP = int(os.environ.get('CLAMP') or '0')
-COLORCONV = int(os.environ.get('COLORCONV') or '0')
-# 0: no conversion; 1: auto; 2: force Rec.601; 3: force Rec.601 -> Rec.709
+CLAMP = bool(int(os.environ.get('CLAMP') or '0'))
 
-sys.stderr.write(f'Rendering {CARDS[CARD][0]}\n')
+try:
+    SCALE = ScalingMode(int(os.environ.get('SCALE')))
+except Exception:
+    SCALE = ScalingMode.CANONICAL
 
-clip = clip[CARDS[CARD][1]]
+try:
+    COLORCONV = ColorConversion(int(os.environ.get('COLORCONV')))
+except Exception:
+    COLORCONV = ColorConversion.NONE
 
-MODE = CARDS[CARD][2]  # 0: no scaling; 1: PAL 16:9; 2: PAL 4:3; 3: 405-line 4:3; 4 - 405-line 5:4
-SRC_LEFT = CARDS[CARD][3]
-SRC_TOP = CARDS[CARD][4]
+sys.stderr.write(f'Rendering {CARDS[CARD].name}\n')
 
-if SCALE <= 0:
-    SCALE_HORIZ = 0
-    MODE = 0
-else:
-    SCALE_HORIZ = SCALE - 1
+clip = clip[CARDS[CARD].frame]
+
+MODE = CARDS[CARD].mode
+SRC_LEFT = CARDS[CARD].src_left
+SRC_TOP = CARDS[CARD].src_top
+
+if SCALE is ScalingMode.NONE:
+    MODE = OriginalResolution.HD1080
 
 # Nonlinearity precorrection
 clip = vapoursynth.core.resize.Point(clip, format=vapoursynth.YUV444P8)
@@ -58,7 +92,7 @@ y_spline = scipy.interpolate.CubicSpline(
 def correct_y(x):
     # result = x
     result = float(y_spline(x))
-    if CLAMP > 0:
+    if CLAMP:
         result = min(max(result, 16.0), 235.0)
     else:
         result = min(max(result, 0.0), 255.0)
@@ -67,7 +101,7 @@ def correct_y(x):
 
 def correct_uv(x):
     result = x - 128
-    if CLAMP > 0:
+    if CLAMP:
         result = min(max(result, -112.0), 112.0)
     else:
         result = min(max(result, -128.0), 127.0)
@@ -81,51 +115,51 @@ vclip = vapoursynth.core.std.Lut(vclip, function=correct_uv, floatout=True)
 clip = vapoursynth.core.std.ShufflePlanes([yclip, uclip, vclip], planes=[0, 0, 0],
                                           colorfamily=vapoursynth.YUV, prop_src=clip)
 
-if MODE == 1:
+if MODE is OriginalResolution.PAL169:
     rclip = vapoursynth.core.std.FlipHorizontal(clip)
     clip = vapoursynth.core.std.StackHorizontal([rclip, clip, rclip])
     clip = vapoursynth.core.std.CropAbs(clip, 2560, 1080, left=1600)
 precrop_w = None
-if MODE == 1 or MODE == 2 or MODE == 3:
-    if SCALE_HORIZ == 1:
+if MODE in (OriginalResolution.PAL169, OriginalResolution.PAL43, OriginalResolution.SYSA43):
+    if SCALE is ScalingMode.CANONICAL:
         scale_w = 936
         crop_w = 720
-    elif SCALE_HORIZ == 2:
-        if MODE == 1:
+    elif SCALE is ScalingMode.SQUARE_PIXELS:
+        if MODE is OriginalResolution.PAL169:
             precrop_w = 1980
             scale_w = 1056
             crop_w = 1052
-        elif MODE == 2:
+        elif MODE is OriginalResolution.PAL43:
             scale_w = 1024
             crop_w = 788
         else:
             precrop_w = 1480
             scale_w = 518
             crop_w = None
-    elif MODE == 1:
+    elif MODE is OriginalResolution.PAL169:
         scale_w = 2560
         crop_w = 1970
     else:
         scale_w = 1920
         crop_w = 1478
-elif MODE == 4:
-    if SCALE_HORIZ == 0:
+elif MODE is OriginalResolution.SYSA54:
+    if SCALE is ScalingMode.VERTICAL:
         scale_w = 1920
         crop_w = 1386
     else:
         precrop_w = 1400
-        if SCALE_HORIZ == 1:
+        if SCALE is ScalingMode.CANONICAL:
             scale_w = 728
             crop_w = 720
-        elif SCALE_HORIZ == 2:
+        elif SCALE is ScalingMode.SQUARE_PIXELS:
             scale_w = 490
             crop_w = 486
-if MODE == 1 or MODE == 2:
+if MODE in (OriginalResolution.PAL169, OriginalResolution.PAL43):
     height = 576
-elif MODE == 3 or MODE == 4:
+elif MODE in (OriginalResolution.SYSA43, OriginalResolution.SYSA54):
     height = 378
 
-if MODE != 0:
+if MODE is not OriginalResolution.HD1080:
     if precrop_w is not None:
         clip = vapoursynth.core.std.CropAbs(clip, precrop_w, 1080,
                                             left=(clip.width - precrop_w) // 2)
@@ -135,14 +169,15 @@ if MODE != 0:
     if crop_w is not None:
         clip = vapoursynth.core.std.CropAbs(clip, crop_w, height, left=(scale_w - crop_w) // 2)
 
-if COLORCONV >= 3:
+if COLORCONV is ColorConversion.FORCE601TO709:
     clip = vapoursynth.core.std.SetFrameProps(clip, _Matrix=vapoursynth.MATRIX_BT470_BG,
                                               _Transfer=vapoursynth.TRANSFER_BT601,
                                               _Primaries=vapoursynth.PRIMARIES_BT470_BG)
     clip = vapoursynth.core.resize.Point(clip, matrix=vapoursynth.MATRIX_BT709,
                                          transfer=vapoursynth.TRANSFER_BT709,
                                          primaries=vapoursynth.PRIMARIES_BT709)
-elif COLORCONV >= 2 or (COLORCONV >= 1 and MODE != 0):
+elif COLORCONV is ColorConversion.FORCE601 or (
+        COLORCONV is ColorConversion.AUTO and MODE is not OriginalResolution.HD1080):
     clip = vapoursynth.core.resize.Point(clip, matrix=vapoursynth.MATRIX_BT470_BG,
                                          transfer=vapoursynth.TRANSFER_BT601,
                                          primaries=vapoursynth.PRIMARIES_BT470_BG)
