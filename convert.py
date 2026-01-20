@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import enum
 import os
 
 import PIL.Image
 import numpy
 
-
-class ColorSpace(enum.Enum):
-    BT601 = 601
-    BT709 = 709
-
+import common
 
 with open('/dev/stdin', 'rb') as f:
     data = f.read()
@@ -28,15 +23,15 @@ elif len(data) % (12 * 378) == 0 and len(data) // (12 * 378) >= 486:
 yuvdata = numpy.ndarray((3, height, width), dtype='float32', buffer=bytearray(data))
 
 try:
-    COLORSPACE = ColorSpace(int(os.environ.get('COLORSPACE')))
+    COLORSPACE = common.ColorSpace(int(os.environ.get('COLORSPACE')))
 except Exception:
-    COLORSPACE = ColorSpace.BT709
+    COLORSPACE = common.ColorSpace.BT709
 LIMITED = bool(int(os.environ.get('LIMITED') or '0'))
 
-if COLORSPACE is ColorSpace.BT601:
+if COLORSPACE is common.ColorSpace.BT601:
     convmatrix = numpy.array(
         [[1.0, 0.0, 1.402], [1.0, -0.34413628620102216, -0.7141362862010221], [1.0, 1.772, 0.0]])
-elif COLORSPACE is ColorSpace.BT709:
+elif COLORSPACE is common.ColorSpace.BT709:
     convmatrix = numpy.array(
         [[1.0, 0.0, 1.5748], [1.0, -0.18732427293064877, -0.4681242729306488], [1.0, 1.8556, 0.0]])
 

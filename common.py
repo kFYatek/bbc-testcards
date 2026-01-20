@@ -1,0 +1,54 @@
+# -*- coding: utf-8 -*-
+import enum
+import typing
+
+
+class ColorSpace(enum.Enum):
+    BT601 = 601
+    BT709 = 709
+
+
+class ScalingMode(enum.Enum):
+    NONE = 0
+    VERTICAL = 1
+    CANONICAL = 2
+    SQUARE_PIXELS = 3
+
+
+class ColorConversion(enum.Enum):
+    NONE = 0
+    AUTO = 1
+    FORCE601 = 2
+    FORCE601TO709 = 3
+
+
+class OriginalResolution(enum.Enum):
+    HD1080 = enum.auto()
+    PAL169 = enum.auto()
+    PAL43 = enum.auto()
+    SYSA43 = enum.auto()
+    SYSA54 = enum.auto()
+
+
+class TestCardDefinition(typing.NamedTuple):
+    name: str
+    frame: int
+    mode: OriginalResolution
+    src_left: float = 0.0
+    src_top: float = 0.0
+
+
+CARDS = [TestCardDefinition('Test Card X', 600, OriginalResolution.HD1080),
+         TestCardDefinition('Television Eye', 1557, OriginalResolution.HD1080),
+         TestCardDefinition('Tuning Signal', 2030, OriginalResolution.SYSA54, -0.27, 1.867),
+         TestCardDefinition('Circle and line', 2505, OriginalResolution.HD1080),
+         TestCardDefinition('Test Card A', 3009, OriginalResolution.SYSA43, 0.0, 1.5),
+         TestCardDefinition('Test Card B', 3507, OriginalResolution.SYSA43, -1.54, 1),
+         TestCardDefinition('Test Card C', 4007, OriginalResolution.SYSA43, 0.0, -0.867),
+         TestCardDefinition('Test Card D', 4511, OriginalResolution.SYSA43, 0.0, -0.867),
+         TestCardDefinition('Test Card F (optical)', 5011, OriginalResolution.PAL43, -0.55, 1.0),
+         TestCardDefinition('Test Card F (electronic)', 5515, OriginalResolution.PAL43, 0.5, 1.0),
+         TestCardDefinition('Test Card J', 6015, OriginalResolution.PAL43, 0.0, 1.0),
+         TestCardDefinition('Test Card F widescreen', 6517, OriginalResolution.PAL169, -1.35, 1.0),
+         TestCardDefinition('Test Card W', 7017, OriginalResolution.PAL169),
+         TestCardDefinition('Test Card 3D', 7988, OriginalResolution.HD1080), ]
