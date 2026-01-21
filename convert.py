@@ -30,6 +30,7 @@ try:
 except Exception:
     COLORSPACE = common.ColorSpace.BT709
 LIMITED = bool(int(os.environ.get('LIMITED') or '0'))
+RAW16 = bool(int(os.environ.get('RAW16') or '0'))
 
 try:
     CARD = common.CARDS[int(os.environ['CARD'])]
@@ -116,19 +117,41 @@ if COLORSPACE is common.ColorSpace.BT601:
 elif COLORSPACE is common.ColorSpace.BT709:
     convmatrix = numpy.array(
         [[1.0, 0.0, 1.5748], [1.0, -0.18732427293064877, -0.4681242729306488], [1.0, 1.8556, 0.0]])
-
-rgbdata = numpy.matvec(convmatrix, yuvdata, axes=[(0, 1), (0), (2)])
-
-if LIMITED:
-    rgbdata *= 219.0
-    rgbdata += 16.0
 else:
-    rgbdata *= 255.0
+    convmatrix = None
 
-outbuf = bytearray(rgbdata.size)
-output = numpy.ndarray(rgbdata.shape, dtype='uint8', buffer=outbuf)
-output[:, :, :] = numpy.round(numpy.minimum(numpy.maximum(rgbdata, 0.0), 255.0))
+if convmatrix is not None:
+    outdata = numpy.matvec(convmatrix, yuvdata, axes=[(0, 1), (0), (0)])
+else:
+    outdata = yuvdata
 
-im = PIL.Image.frombuffer('RGB', (output.shape[1], output.shape[0]), outbuf)
+if LIMITED or RAW16:
+    if convmatrix is not None:
+        outdata *= 219.0
+        outdata += 16.0
+    else:
+        outdata[0] *= 219.0
+        outdata[0] += 16.0
+        outdata[1:] *= 224.0
+        outdata[1:] += 128.0
+    if RAW16:
+        outdata *= 256.0
+else:
+    if convmatrix is None:
+        outdata[1:] += 0.5
+    outdata *= 255.0
+
+if not RAW16:
+    outdata = numpy.transpose(outdata, (1, 2, 0))
+
+outbuf = bytearray(outdata.size * (2 if RAW16 else 1))
+output = numpy.ndarray(outdata.shape, dtype='uint16' if RAW16 else 'uint8', buffer=outbuf)
+output[:, :, :] = numpy.round(
+    numpy.minimum(numpy.maximum(outdata, 0.0), 65535.0 if RAW16 else 255.0))
+
 with open('/dev/stdout', 'wb') as f:
-    im.save(f, format='PNG')
+    if RAW16:
+        f.write(outbuf)
+    else:
+        PIL.Image.frombuffer('RGB', (output.shape[1], output.shape[0]), outbuf).save(f,
+                                                                                     format='PNG')
