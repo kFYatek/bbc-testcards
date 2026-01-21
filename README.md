@@ -74,7 +74,7 @@ fall into one of the following categories:
   includes the famous GIF version of Test Card F, as well as images shared on
   some early hobbyist websites
 * Unofficial recreations made by various people, usually without any regard for
-  engineering qualities - those are often plesant to look at, but made and
+  engineering qualities - those are often pleasant to look at, but made and
   posted in wrong resolutions, have false colors etc.
 
 Other famous test patterns such as the SMPTE color bars, the Philips circle

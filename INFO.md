@@ -174,6 +174,8 @@ available pictures of the originals.
   * castellation colors are raw data in different formats (BT.601 vs. BT.709)
   * photograph colors are supposed to be properly converted
 
+## Missing but notable
+
 ### Test Card G
 
 * Needs to be sourced elsewhere
