@@ -8,29 +8,13 @@ import scipy.signal
 
 import common
 
-with open('/dev/stdin', 'rb') as f:
-    data = f.read()
-
-if len(data) == 12 * 1920 * 1080:
-    width = 1920
-    height = 1080
-elif len(data) % (12 * 576) == 0 and len(data) // (12 * 576) >= 720:
-    width = len(data) // (12 * 576)
-    height = 576
-elif len(data) % (12 * 378) == 0 and len(data) // (12 * 378) >= 486:
-    width = len(data) // (12 * 378)
-    height = 378
-
-yuvdata_raw = numpy.ndarray((3, height, width), dtype='float32', buffer=bytearray(data))
-yuvdata = numpy.zeros(yuvdata_raw.shape)
-yuvdata[:, :, :] = yuvdata_raw
-
 try:
     COLORSPACE = common.ColorSpace(int(os.environ.get('COLORSPACE')))
 except Exception:
     COLORSPACE = common.ColorSpace.BT709
 LIMITED = bool(int(os.environ.get('LIMITED') or '0'))
-RAW16 = bool(int(os.environ.get('RAW16') or '0'))
+RAW16IN = bool(int(os.environ.get('RAW16IN') or '0'))
+RAW16OUT = bool(int(os.environ.get('RAW16OUT') or '0'))
 
 try:
     CARD = common.CARDS[int(os.environ['CARD'])]
@@ -41,6 +25,32 @@ try:
     SCALE = common.ScalingMode(int(os.environ.get('SCALE')))
 except Exception:
     SCALE = common.ScalingMode.NONE
+
+with open('/dev/stdin', 'rb') as f:
+    data = f.read()
+
+multiplier = 6 if RAW16IN else 12
+if len(data) == multiplier * 1920 * 1080:
+    width = 1920
+    height = 1080
+elif len(data) % (multiplier * 576) == 0 and len(data) // (multiplier * 576) >= 720:
+    width = len(data) // (multiplier * 576)
+    height = 576
+elif len(data) % (multiplier * 378) == 0 and len(data) // (multiplier * 378) >= 486:
+    width = len(data) // (multiplier * 378)
+    height = 378
+
+yuvdata_raw = numpy.ndarray((3, height, width), dtype='uint16' if RAW16IN else 'float32',
+                            buffer=bytearray(data))
+yuvdata = numpy.zeros(yuvdata_raw.shape)
+yuvdata[:, :, :] = yuvdata_raw
+
+if RAW16IN:
+    yuvdata /= 256.0
+    yuvdata[0] -= 16.0
+    yuvdata[0] /= 219.0
+    yuvdata[1:] -= 128.0
+    yuvdata[1:] /= 224.0
 
 
 def apply_shift(data: numpy.array, shift: float, axis: int = -1):
@@ -125,7 +135,7 @@ if convmatrix is not None:
 else:
     outdata = yuvdata
 
-if LIMITED or RAW16:
+if LIMITED or RAW16OUT:
     if convmatrix is not None:
         outdata *= 219.0
         outdata += 16.0
@@ -134,23 +144,23 @@ if LIMITED or RAW16:
         outdata[0] += 16.0
         outdata[1:] *= 224.0
         outdata[1:] += 128.0
-    if RAW16:
+    if RAW16OUT:
         outdata *= 256.0
 else:
     if convmatrix is None:
         outdata[1:] += 0.5
     outdata *= 255.0
 
-if not RAW16:
+if not RAW16OUT:
     outdata = numpy.transpose(outdata, (1, 2, 0))
 
-outbuf = bytearray(outdata.size * (2 if RAW16 else 1))
-output = numpy.ndarray(outdata.shape, dtype='uint16' if RAW16 else 'uint8', buffer=outbuf)
+outbuf = bytearray(outdata.size * (2 if RAW16OUT else 1))
+output = numpy.ndarray(outdata.shape, dtype='uint16' if RAW16OUT else 'uint8', buffer=outbuf)
 output[:, :, :] = numpy.round(
-    numpy.minimum(numpy.maximum(outdata, 0.0), 65535.0 if RAW16 else 255.0))
+    numpy.minimum(numpy.maximum(outdata, 0.0), 65535.0 if RAW16OUT else 255.0))
 
 with open('/dev/stdout', 'wb') as f:
-    if RAW16:
+    if RAW16OUT:
         f.write(outbuf)
     else:
         PIL.Image.frombuffer('RGB', (output.shape[1], output.shape[0]), outbuf).save(f,
