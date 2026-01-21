@@ -75,7 +75,7 @@ def get_scaling_dimensions(scaling_mode: ScalingMode, original_resolution: Origi
         elif original_resolution is OriginalResolution.PAL43:
             return ScalingDimensions(1920, 1024, 788, 576)
         elif original_resolution is OriginalResolution.SYSA43:
-            return ScalingDimensions(1920, 1480, 518, 378)
+            return ScalingDimensions(1480, 518, 518, 378)
         elif original_resolution is OriginalResolution.SYSA54:
             return ScalingDimensions(1400, 490, 486, 378)
     elif scaling_mode is ScalingMode.PAL_4FSC:
