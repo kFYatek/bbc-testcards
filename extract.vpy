@@ -14,6 +14,7 @@ clip = vapoursynth.core.bs.VideoSource(source='This Is BBC HD_20130326_0120.ts')
 
 CARD = common.CARDS[int(os.environ['CARD'])]
 CLAMP = bool(int(os.environ.get('CLAMP') or '0'))
+EQUALIZE = bool(int(os.environ.get('EQUALIZE') or '1'))
 
 try:
     SCALE = common.ScalingMode(int(os.environ.get('SCALE')))
@@ -37,6 +38,7 @@ sys.stderr.write(f'Rendering {CARD.name}\n')
 sys.stderr.write(f'Scaling mode: {SCALE}\n')
 sys.stderr.write(f'Color conversion mode: {COLORCONV}\n')
 sys.stderr.write(f'Clamping: {CLAMP}\n')
+sys.stderr.write(f'Equalize: {EQUALIZE}\n')
 
 clip = clip[CARD.frame]
 
@@ -45,14 +47,17 @@ clip = vapoursynth.core.resize.Point(clip, format=vapoursynth.YUV444P8)
 yclip, uclip, vclip = clip.std.SplitPlanes()
 
 y_spline = scipy.interpolate.CubicSpline(
-    [-16, 0, 16, 59, 88, 97, 100, 125, 149, 188, 196, 230, 235, 240, 245, 250, 255],
-    [-16, 0, 16, 60, 90, 101, 104, 126, 147, 183, 191, 224, 235, 255, 275, 295, 315],
-    bc_type='clamped')
+    [-16, 0, 16, 59, 88, 97, 100, 125, 149, 188, 196, 203, 210, 217, 224, 230, 235, 240, 245, 250,
+     255],
+    [-16, 0, 16, 60, 90, 101, 104, 126, 147, 183, 191, 198, 204, 212, 220, 224, 235, 250, 265, 280,
+     295], bc_type='clamped')
 
 
 def correct_y(x):
-    # result = x
-    result = float(y_spline(x))
+    if EQUALIZE:
+        result = float(y_spline(x))
+    else:
+        result = x
     if CLAMP:
         result = min(max(result, 16.0), 235.0)
     else:
