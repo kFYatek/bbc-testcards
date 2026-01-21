@@ -14,9 +14,10 @@ been shown. This project aims to both recover the original SD images from that
 HD broadcast as accurately as possible (this part is largely done), and manually
 edit them to further remove remaining artifacts (pending, on hold).
 
-**NOTE:** This repository does not contain any actual test card images (at least
-for now), only scripts for processing data from the transport stream recording.
-See [INFO.md](./INFO.md) for where to find it.
+**NOTE:** This repository does not contain actual test card images (aside from
+incomplete parts of Test Card F - at least for now), only scripts for processing
+data from the transport stream recording. See [INFO.md](./INFO.md) for where to
+find it.
 
 Contents
 --------
@@ -44,6 +45,12 @@ Contents
   all the supported test cards.
 * [common.py](./common.py) - some type definitions and test card metadata shared
   between scripts
+* [TestCardFElec_BarneyWol.xcf](./TestCardFElec_BarneyWol.xcf) - XCF (GIMP) file
+  containing features of the electronic version of Test Card F recovered from
+  [Barney Wol's archived website](https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html)
+  and arranged on a canvas that matches the output of my scripts when set to
+  `SCALE=3` (square pixels). These are said to come from BBC's original data, so
+  can be used as reference.
 
 `extract.vpy` and `convert.py` can operate in several different modes that can
 be configured through environment variables (which also means that `generate.sh`

@@ -139,7 +139,10 @@ available pictures of the originals.
   17734375 Hz)
 * Closeups: https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html -
   apparently sampled at square pixels (14769230.(769230) Hz, or perhaps
-  14765625 Hz)
+  14765625 Hz) - recovered and arranged on
+  [TestCardFElec_BarneyWol.xcf](./TestCardFElec_BarneyWol.xcf)
+* Note: `src_left` is deliberately set to offset the center by half-pixel,
+  to match the closeups mentioned above.
 
 ### Test Card J
 
