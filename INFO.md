@@ -153,6 +153,7 @@ available pictures of the originals.
   * castellation colors are raw data in different formats (BT.601 vs. BT.709)
   * photograph colors are supposed to be properly converted
 * Animation reference: https://www.youtube.com/watch?v=IcN52H9x2oU
+* Sample 534 is 0.3 samples before peak of the frequency test
 
 ### Test Card F widescreen
 

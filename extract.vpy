@@ -15,6 +15,7 @@ clip = vapoursynth.core.bs.VideoSource(source='This Is BBC HD_20130326_0120.ts')
 CARD = common.CARDS[int(os.environ['CARD'])]
 CLAMP = bool(int(os.environ.get('CLAMP') or '0'))
 EQUALIZE = bool(int(os.environ.get('EQUALIZE') or '1'))
+ANTIRING = float(os.environ.get('ANTIRING') or '0')
 
 try:
     SCALE = common.ScalingMode(int(os.environ.get('SCALE')))
@@ -29,10 +30,10 @@ except Exception:
 SCALER = os.environ.get('SCALER') or 'Debilinear'
 
 SCALER_H = os.environ.get('SCALER_H') or SCALER
-SCALER_H = SCALER_H[0].upper() + SCALER_H[1:].lower()
+SCALER_H = SCALER_H.lower()
 
 SCALER_V = os.environ.get('SCALER_V') or SCALER
-SCALER_V = SCALER_V[0].upper() + SCALER_V[1:].lower()
+SCALER_V = SCALER_V.lower()
 
 sys.stderr.write(f'Rendering {CARD.name}\n')
 sys.stderr.write(f'Scaling mode: {SCALE}\n')
@@ -88,24 +89,33 @@ if dimensions is not None:
     src_top = CARD.src_top
     src_width = dimensions.precrop_w
     src_height = clip.height
-    if SCALER_H[0:2] == 'De':
-        scaler_h = getattr(vapoursynth.core.descale, SCALER_H)
+    scaler_h_kwargs = {}
+    if SCALER_H[0:2] == 'de':
+        scaler_h = getattr(vapoursynth.core.descale, SCALER_H[0].upper() + SCALER_H[1:])
         if dimensions.scale_w == dimensions.precrop_w:
             src_left = 0
         else:
             src_left *= -dimensions.scale_w / dimensions.precrop_w
         src_width = None
+        scaler_h_kwargs = {'src_left': src_left}
     else:
-        scaler_h = getattr(vapoursynth.core.resize, SCALER_H)
-    if SCALER_V[0:2] == 'De':
-        scaler_v = getattr(vapoursynth.core.descale, SCALER_V)
+        scaler_h = vapoursynth.core.placebo.Resample
+        scaler_h_kwargs = {'filter': SCALER_H, 'sx': src_left}
+        if ANTIRING != 0:
+            scaler_h_kwargs['antiring'] = ANTIRING
+    if SCALER_V[0:2] == 'de':
+        scaler_v = getattr(vapoursynth.core.descale, SCALER_V[0].upper() + SCALER_V[1:])
         if dimensions.scale_h == clip.height:
             src_top = 0
         else:
             src_top *= -dimensions.scale_h / clip.height
         src_height = None
+        scaler_v_kwargs = {'src_top': src_top}
     else:
-        scaler_v = getattr(vapoursynth.core.resize, SCALER_V)
+        scaler_v = vapoursynth.core.placebo.Resample
+        scaler_v_kwargs = {'filter': SCALER_V, 'sy': src_top}
+        if ANTIRING != 0:
+            scaler_v_kwargs['antiring'] = ANTIRING
 
     while dimensions.precrop_w > clip.width:
         rclip = vapoursynth.core.std.FlipHorizontal(clip)
@@ -114,13 +124,13 @@ if dimensions is not None:
         clip = vapoursynth.core.std.CropAbs(clip, dimensions.precrop_w, clip.height,
                                             left=(clip.width - dimensions.precrop_w) // 2)
     if SCALER_H == SCALER_V:
-        clip = scaler_v(clip, dimensions.scale_w, dimensions.scale_h, src_left=src_left,
-                        src_top=src_top, src_width=src_width, src_height=src_height)
+        clip = scaler_v(clip, dimensions.scale_w, dimensions.scale_h, src_width=src_width,
+                        src_height=src_height, **(scaler_h_kwargs | scaler_v_kwargs))
     else:
-        clip = scaler_h(clip, dimensions.scale_w, clip.height, src_left=src_left,
-                        src_width=src_width)
-        clip = scaler_v(clip, clip.width, dimensions.scale_h, src_top=src_top,
-                        src_height=src_height)
+        clip = scaler_h(clip, dimensions.scale_w, clip.height, src_width=src_width,
+                        **scaler_h_kwargs)
+        clip = scaler_v(clip, clip.width, dimensions.scale_h, src_height=src_height,
+                        **scaler_v_kwargs)
     if dimensions.crop_w is not None:
         clip = vapoursynth.core.std.CropAbs(clip, dimensions.crop_w, clip.height,
                                             left=(clip.width - dimensions.crop_w) // 2)
