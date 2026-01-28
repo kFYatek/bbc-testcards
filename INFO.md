@@ -143,6 +143,7 @@ available pictures of the originals.
   [TestCardFElec_BarneyWol.xcf](./TestCardFElec_BarneyWol.xcf)
 * Note: `src_left` is deliberately set to offset the center by half-pixel,
   to match the closeups mentioned above.
+* The very top and very bottom lines are seemingly supposed to be empty.
 
 ### Test Card J
 

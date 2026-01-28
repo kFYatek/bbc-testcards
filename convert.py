@@ -72,7 +72,7 @@ def apply_shift(data: numpy.array, shift: float, axis: int = -1):
         fft = scipy.fft.rfft(data, axis=-1)
         fft *= numpy.exp(
             numpy.array(range(fft.shape[-1])) * (2.0j * shift * numpy.pi / data.shape[-1]))
-        data = scipy.fft.irfft(fft, axis=-1)
+        data = scipy.fft.irfft(fft, n=data.shape[-1], axis=-1)
         data = numpy.delete(data, [0, -1], axis=-1)
         data = numpy.swapaxes(data, len(data.shape) - 1, axis)
     return data
@@ -98,7 +98,7 @@ if CARD is not None:
     dimensions = common.get_scaling_dimensions(SCALE, CARD.mode)
     if width >= common.get_scaling_dimensions(common.ScalingMode.VERTICAL, CARD.mode).crop_w:
         src_left = CARD.src_left
-    if dimensions is not None and height != dimensions.scale_h:
+    if height == 1080:
         src_top = CARD.src_top
 
 if dimensions is not None:
