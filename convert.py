@@ -11,10 +11,12 @@ import common
 try:
     COLORSPACE = common.ColorSpace(int(os.environ.get('COLORSPACE')))
 except Exception:
-    COLORSPACE = common.ColorSpace.BT709
+    COLORSPACE = common.ColorSpace.BT601
 LIMITED = bool(int(os.environ.get('LIMITED') or '0'))
 RAW16IN = bool(int(os.environ.get('RAW16IN') or '0'))
 RAW16OUT = bool(int(os.environ.get('RAW16OUT') or '0'))
+PLOT = int(os.environ.get('PLOT') or '0')
+PLOTSCALE = float(os.environ.get('PLOTSCALE') or '1')
 
 try:
     CARD = common.CARDS[int(os.environ['CARD'])]
@@ -135,33 +137,71 @@ if convmatrix is not None:
 else:
     outdata = yuvdata
 
-if LIMITED or RAW16OUT:
-    if convmatrix is not None:
-        outdata *= 219.0
-        outdata += 16.0
+if PLOT > 0:
+    import matplotlib.pyplot
+    import matplotlib.widgets
+
+    UPSAMPLE = 32
+    outdata = resample_with_mirrors(outdata, outdata.shape[2] * UPSAMPLE, axis=2)
+    xdata = numpy.array(range(outdata.shape[2])) / UPSAMPLE
+
+    fig = matplotlib.pyplot.figure()
+    subplot = fig.add_subplot()
+    subplot.set_autoscalex_on(True)
+    subplot.set_autoscaley_on(False)
+    if convmatrix is not None or PLOT == 1:
+        subplot.set_ybound(-0.1 * PLOTSCALE, 1.1 * PLOTSCALE)
     else:
-        outdata[0] *= 219.0
-        outdata[0] += 16.0
-        outdata[1:] *= 224.0
-        outdata[1:] += 128.0
-    if RAW16OUT:
-        outdata *= 256.0
+        subplot.set_ybound(-0.6 * PLOTSCALE, 0.6 * PLOTSCALE)
+    matplotlib.pyplot.subplots_adjust(bottom=0.25)
+
+    lineno = 0
+    mpline, = subplot.plot(xdata, outdata[PLOT - 1, lineno] * PLOTSCALE)
+
+    slider_frame = matplotlib.pyplot.axes([0.1, 0.1, 0.8, 0.03])
+    slider = matplotlib.widgets.Slider(slider_frame, 'Line', 0, outdata.shape[1] - 1, valinit=0,
+                                       valfmt='%d')
+
+
+    def slider_update(val):
+        lineno = int(numpy.floor(slider.val))
+        mpline.set_ydata(outdata[PLOT - 1, lineno] * PLOTSCALE)
+        subplot.set_title(f'Line {lineno}')
+        subplot.relim()
+        matplotlib.pyplot.draw()
+
+
+    slider.on_changed(slider_update)
+    slider_update(0)
+    matplotlib.pyplot.show()
 else:
-    if convmatrix is None:
-        outdata[1:] += 0.5
-    outdata *= 255.0
-
-if not RAW16OUT:
-    outdata = numpy.transpose(outdata, (1, 2, 0))
-
-outbuf = bytearray(outdata.size * (2 if RAW16OUT else 1))
-output = numpy.ndarray(outdata.shape, dtype='uint16' if RAW16OUT else 'uint8', buffer=outbuf)
-output[:, :, :] = numpy.round(
-    numpy.minimum(numpy.maximum(outdata, 0.0), 65535.0 if RAW16OUT else 255.0))
-
-with open('/dev/stdout', 'wb') as f:
-    if RAW16OUT:
-        f.write(outbuf)
+    if LIMITED or RAW16OUT:
+        if convmatrix is not None:
+            outdata *= 219.0
+            outdata += 16.0
+        else:
+            outdata[0] *= 219.0
+            outdata[0] += 16.0
+            outdata[1:] *= 224.0
+            outdata[1:] += 128.0
+        if RAW16OUT:
+            outdata *= 256.0
     else:
-        PIL.Image.frombuffer('RGB', (output.shape[1], output.shape[0]), outbuf).save(f,
-                                                                                     format='PNG')
+        if convmatrix is None:
+            outdata[1:] += 0.5
+        outdata *= 255.0
+
+    if not RAW16OUT:
+        outdata = numpy.transpose(outdata, (1, 2, 0))
+
+    outbuf = bytearray(outdata.size * (2 if RAW16OUT else 1))
+    output = numpy.ndarray(outdata.shape, dtype='uint16' if RAW16OUT else 'uint8', buffer=outbuf)
+    output[:, :, :] = numpy.round(
+        numpy.minimum(numpy.maximum(outdata, 0.0), 65535.0 if RAW16OUT else 255.0))
+
+    with open('/dev/stdout', 'wb') as f:
+        if RAW16OUT:
+            f.write(outbuf)
+        else:
+            PIL.Image.frombuffer('RGB', (output.shape[1], output.shape[0]), outbuf).save(f,
+                                                                                         format='PNG')

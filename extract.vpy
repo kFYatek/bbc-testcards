@@ -25,7 +25,7 @@ except Exception:
 try:
     COLORCONV = common.ColorConversion(int(os.environ.get('COLORCONV')))
 except Exception:
-    COLORCONV = common.ColorConversion.NONE
+    COLORCONV = common.ColorConversion.AUTO
 
 SCALER = os.environ.get('SCALER') or 'Debilinear'
 
@@ -144,9 +144,10 @@ if COLORCONV is common.ColorConversion.FORCE601TO709:
                                          primaries=vapoursynth.PRIMARIES_BT709)
 elif COLORCONV is common.ColorConversion.FORCE601 or (
         COLORCONV is common.ColorConversion.AUTO and CARD.mode is not common.OriginalResolution.HD1080):
+    # It looks that the SD test cards have converted matrix, but not primaries
     clip = vapoursynth.core.resize.Point(clip, matrix=vapoursynth.MATRIX_BT470_BG,
-                                         transfer=vapoursynth.TRANSFER_BT601,
-                                         primaries=vapoursynth.PRIMARIES_BT470_BG)
+                                         transfer=vapoursynth.TRANSFER_BT709,
+                                         primaries=vapoursynth.PRIMARIES_BT709)
 
 # Output
 clip = vapoursynth.core.resize.Point(clip, format=vapoursynth.YUV444PS)
