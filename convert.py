@@ -15,6 +15,7 @@ except Exception:
 LIMITED = bool(int(os.environ.get('LIMITED') or '0'))
 RAW16IN = bool(int(os.environ.get('RAW16IN') or '0'))
 RAW16OUT = bool(int(os.environ.get('RAW16OUT') or '0'))
+FILEIN = os.environ.get('FILEIN')
 PLOT = int(os.environ.get('PLOT') or '0')
 PLOTSCALE = float(os.environ.get('PLOTSCALE') or '1')
 
@@ -28,31 +29,56 @@ try:
 except Exception:
     SCALE = common.ScalingMode.NONE
 
-with open('/dev/stdin', 'rb') as f:
-    data = f.read()
+if FILEIN is not None:
+    image = PIL.Image.open(FILEIN)
+    width = image.width
+    height = image.height
+    rgbdata = numpy.array(image.get_flattened_data())
+    rgbdata = rgbdata.reshape((height, width, 3))
+    rgbdata = (rgbdata - 16.0) / 219.0
+    rgbdata = rgbdata.transpose((2, 0, 1))
 
-multiplier = 6 if RAW16IN else 12
-if len(data) == multiplier * 1920 * 1080:
-    width = 1920
-    height = 1080
-elif len(data) % (multiplier * 576) == 0 and len(data) // (multiplier * 576) >= 720:
-    width = len(data) // (multiplier * 576)
-    height = 576
-elif len(data) % (multiplier * 378) == 0 and len(data) // (multiplier * 378) >= 486:
-    width = len(data) // (multiplier * 378)
-    height = 378
+    if COLORSPACE is common.ColorSpace.BT601:
+        convmatrix = numpy.array(
+            [[0.299, 0.587, 0.114], [-0.16873589164785552, -0.3312641083521445, 0.5],
+             [0.5, -0.4186875891583452, -0.08131241084165478]])
+    elif COLORSPACE is common.ColorSpace.BT709:
+        convmatrix = numpy.array(
+            [[0.2126, 0.7152, 0.0722], [-0.11457210605733995, -0.3854278939426601, 0.5],
+             [0.5, -0.4541529083058166, -0.04584709169418339]])
+    else:
+        convmatrix = None
 
-yuvdata_raw = numpy.ndarray((3, height, width), dtype='uint16' if RAW16IN else 'float32',
-                            buffer=bytearray(data))
-yuvdata = numpy.zeros(yuvdata_raw.shape)
-yuvdata[:, :, :] = yuvdata_raw
+    if convmatrix is not None:
+        yuvdata = numpy.matvec(convmatrix, rgbdata, axes=[(0, 1), (0), (0)])
+    else:
+        yuvdata = rgbdata
+else:
+    with open('/dev/stdin', 'rb') as f:
+        data = f.read()
 
-if RAW16IN:
-    yuvdata /= 256.0
-    yuvdata[0] -= 16.0
-    yuvdata[0] /= 219.0
-    yuvdata[1:] -= 128.0
-    yuvdata[1:] /= 224.0
+    multiplier = 6 if RAW16IN else 12
+    if len(data) == multiplier * 1920 * 1080:
+        width = 1920
+        height = 1080
+    elif len(data) % (multiplier * 576) == 0 and len(data) // (multiplier * 576) >= 720:
+        width = len(data) // (multiplier * 576)
+        height = 576
+    elif len(data) % (multiplier * 378) == 0 and len(data) // (multiplier * 378) >= 486:
+        width = len(data) // (multiplier * 378)
+        height = 378
+
+    yuvdata_raw = numpy.ndarray((3, height, width), dtype='uint16' if RAW16IN else 'float32',
+                                buffer=bytearray(data))
+    yuvdata = numpy.zeros(yuvdata_raw.shape)
+    yuvdata[:, :, :] = yuvdata_raw
+
+    if RAW16IN:
+        yuvdata /= 256.0
+        yuvdata[0] -= 16.0
+        yuvdata[0] /= 219.0
+        yuvdata[1:] -= 128.0
+        yuvdata[1:] /= 224.0
 
 
 def apply_shift(data: numpy.array, shift: float, axis: int = -1):
@@ -123,10 +149,10 @@ if dimensions is not None:
         yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.crop_w) // 2:]
         yuvdata = yuvdata[:, :, :dimensions.crop_w]
 
-if COLORSPACE is common.ColorSpace.BT601:
+if FILEIN is None and COLORSPACE is common.ColorSpace.BT601:
     convmatrix = numpy.array(
         [[1.0, 0.0, 1.402], [1.0, -0.34413628620102216, -0.7141362862010221], [1.0, 1.772, 0.0]])
-elif COLORSPACE is common.ColorSpace.BT709:
+elif FILEIN is None and COLORSPACE is common.ColorSpace.BT709:
     convmatrix = numpy.array(
         [[1.0, 0.0, 1.5748], [1.0, -0.18732427293064877, -0.4681242729306488], [1.0, 1.8556, 0.0]])
 else:
@@ -149,7 +175,8 @@ if PLOT > 0:
     subplot = fig.add_subplot()
     subplot.set_autoscalex_on(True)
     subplot.set_autoscaley_on(False)
-    if convmatrix is not None or PLOT == 1:
+    if PLOT == 1 or convmatrix is not None or (
+            FILEIN is not None and COLORSPACE is common.ColorSpace.YUV):
         subplot.set_ybound(-0.1 * PLOTSCALE, 1.1 * PLOTSCALE)
     else:
         subplot.set_ybound(-0.6 * PLOTSCALE, 0.6 * PLOTSCALE)
