@@ -45,9 +45,9 @@ Contents
   all the supported test cards.
 * [common.py](./common.py) - some type definitions and test card metadata shared
   between scripts
-* [eqcurve.py](./eqcurve.py) - quick and dirty script for generating the
-  precorrection curve used in `extract.vpy`. Note that it has been manually
-  tweaked afterwards.
+* [eqcurve601.py](./eqcurve601.py), [eqcurve709.py](./eqcurve709.py) - quick and
+  dirty scripts for generating the precorrection curves used in `extract.vpy`.
+  Note that they have been manually tweaked afterwards.
 * [TestCardFElec_BarneyWol.xcf](./TestCardFElec_BarneyWol.xcf) - XCF (GIMP) file
   containing features of the electronic version of Test Card F recovered from
   [Barney Wol's archived website](https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html)
