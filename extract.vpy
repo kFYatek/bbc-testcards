@@ -2,6 +2,7 @@
 import os
 import sys
 
+import numpy
 import scipy.interpolate
 import vapoursynth
 
@@ -43,8 +44,25 @@ sys.stderr.write(f'Equalize: {EQUALIZE}\n')
 
 clip = clip[CARD.frame]
 
-# Nonlinearity precorrection
-clip = vapoursynth.core.resize.Point(clip, format=vapoursynth.YUV444P8)
+# Color space conversion
+if COLORCONV is common.ColorConversion.FORCE601TO709:
+    clip = vapoursynth.core.resize.Point(clip, format=vapoursynth.YUV444PS)
+    clip = vapoursynth.core.std.SetFrameProps(clip, _Matrix=vapoursynth.MATRIX_BT470_BG,
+                                              _Transfer=vapoursynth.TRANSFER_BT601,
+                                              _Primaries=vapoursynth.PRIMARIES_BT470_BG)
+    clip = vapoursynth.core.resize.Point(clip, matrix=vapoursynth.MATRIX_BT709,
+                                         transfer=vapoursynth.TRANSFER_BT709,
+                                         primaries=vapoursynth.PRIMARIES_BT709)
+elif COLORCONV is common.ColorConversion.FORCE601 or (
+        COLORCONV is common.ColorConversion.AUTO and CARD.mode is not common.OriginalResolution.HD1080):
+    # It looks that the SD test cards have converted matrix, but not primaries
+    clip = vapoursynth.core.resize.Point(clip, format=vapoursynth.YUV444PS)
+    clip = vapoursynth.core.resize.Point(clip, matrix=vapoursynth.MATRIX_BT470_BG,
+                                         transfer=vapoursynth.TRANSFER_BT709,
+                                         primaries=vapoursynth.PRIMARIES_BT709)
+
+# Nonlinearity correction
+clip = vapoursynth.core.resize.Point(clip, format=vapoursynth.YUV444P16)
 yclip, uclip, vclip = clip.std.SplitPlanes()
 
 lut = [(-16, -16), (0, 0), (16, 16), (17, 18), (18, 19), (19, 20), (20, 21), (21, 22), (22, 23),
@@ -82,7 +100,8 @@ lut = [(-16, -16), (0, 0), (16, 16), (17, 18), (18, 19), (19, 20), (20, 21), (21
        (234, 232.66666666666666), (235, 234.75), (236, 236.57142857142858), (237, 238), (240, 250),
        (243, 262), (250, 280), (255, 295), (260, 310)]
 
-y_spline = scipy.interpolate.CubicSpline([inp for inp, outp in lut], [outp for inp, outp in lut],
+y_spline = scipy.interpolate.CubicSpline(numpy.array([inp for inp, outp in lut]) * 256.0,
+                                         numpy.array([outp for inp, outp in lut]) * 256.0,
                                          bc_type='clamped')
 
 
@@ -92,24 +111,24 @@ def correct_y(x):
         # Additional correction for SD content
         if COLORCONV is common.ColorConversion.FORCE601 or (
                 COLORCONV is common.ColorConversion.AUTO and CARD.mode is not common.OriginalResolution.HD1080):
-            if result > 223.0:
-                result = (4.0 * result + 1115.0) / 9.0
+            if result > 57088.0:
+                result = (4.0 * result + 285440.0) / 9.0
     else:
         result = x
     if CLAMP:
-        result = min(max(result, 16.0), 235.0)
+        result = min(max(result, 4096.0), 60160.0)
     else:
-        result = min(max(result, 0.0), 255.0)
-    return (result - 16) / 219.0
+        result = min(max(result, 0.0), 65535.0)
+    return (result - 4096) / 56064.0
 
 
 def correct_uv(x):
-    result = x - 128
+    result = x - 32768
     if CLAMP:
-        result = min(max(result, -112.0), 112.0)
+        result = min(max(result, -28672.0), 28672.0)
     else:
-        result = min(max(result, -128.0), 127.0)
-    return result / 224.0
+        result = min(max(result, -32768.0), 32767.0)
+    return result / 57344.0
 
 
 yclip = vapoursynth.core.std.Lut(yclip, function=correct_y, floatout=True)
@@ -119,6 +138,7 @@ vclip = vapoursynth.core.std.Lut(vclip, function=correct_uv, floatout=True)
 clip = vapoursynth.core.std.ShufflePlanes([yclip, uclip, vclip], planes=[0, 0, 0],
                                           colorfamily=vapoursynth.YUV, prop_src=clip)
 
+# Resizing
 dimensions = common.get_scaling_dimensions(SCALE, CARD.mode)
 
 if dimensions is not None:
@@ -154,6 +174,7 @@ if dimensions is not None:
         if ANTIRING != 0:
             scaler_v_kwargs['antiring'] = ANTIRING
 
+    clip = vapoursynth.core.resize.Point(clip, format=vapoursynth.YUV444PS)
     while dimensions.precrop_w > clip.width:
         rclip = vapoursynth.core.std.FlipHorizontal(clip)
         clip = vapoursynth.core.std.StackHorizontal([rclip, clip, rclip])
@@ -171,20 +192,6 @@ if dimensions is not None:
     if dimensions.crop_w is not None:
         clip = vapoursynth.core.std.CropAbs(clip, dimensions.crop_w, clip.height,
                                             left=(clip.width - dimensions.crop_w) // 2)
-
-if COLORCONV is common.ColorConversion.FORCE601TO709:
-    clip = vapoursynth.core.std.SetFrameProps(clip, _Matrix=vapoursynth.MATRIX_BT470_BG,
-                                              _Transfer=vapoursynth.TRANSFER_BT601,
-                                              _Primaries=vapoursynth.PRIMARIES_BT470_BG)
-    clip = vapoursynth.core.resize.Point(clip, matrix=vapoursynth.MATRIX_BT709,
-                                         transfer=vapoursynth.TRANSFER_BT709,
-                                         primaries=vapoursynth.PRIMARIES_BT709)
-elif COLORCONV is common.ColorConversion.FORCE601 or (
-        COLORCONV is common.ColorConversion.AUTO and CARD.mode is not common.OriginalResolution.HD1080):
-    # It looks that the SD test cards have converted matrix, but not primaries
-    clip = vapoursynth.core.resize.Point(clip, matrix=vapoursynth.MATRIX_BT470_BG,
-                                         transfer=vapoursynth.TRANSFER_BT709,
-                                         primaries=vapoursynth.PRIMARIES_BT709)
 
 # Output
 clip = vapoursynth.core.resize.Point(clip, format=vapoursynth.YUV444PS)
