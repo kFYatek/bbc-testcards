@@ -68,12 +68,15 @@ else:
         width = len(data) // (multiplier * 378)
         height = 378
 
-    yuvdata_raw = numpy.ndarray((3, height, width), dtype='uint16' if RAW16IN else 'float32',
-                                buffer=bytearray(data))
+    if RAW16IN:
+        yuvdata_raw = numpy.ndarray((height, width, 3), dtype=numpy.uint16, buffer=bytearray(data))
+    else:
+        yuvdata_raw = numpy.ndarray((3, height, width), dtype=numpy.float32, buffer=bytearray(data))
     yuvdata = numpy.zeros(yuvdata_raw.shape)
     yuvdata[:, :, :] = yuvdata_raw
 
     if RAW16IN:
+        yuvdata = numpy.transpose(yuvdata, (2, 0, 1))
         yuvdata /= 256.0
         yuvdata[0] -= 16.0
         yuvdata[0] /= 219.0
@@ -218,9 +221,7 @@ else:
             outdata[1:] += 0.5
         outdata *= 255.0
 
-    if not RAW16OUT:
-        outdata = numpy.transpose(outdata, (1, 2, 0))
-
+    outdata = numpy.transpose(outdata, (1, 2, 0))
     outbuf = bytearray(outdata.size * (2 if RAW16OUT else 1))
     output = numpy.ndarray(outdata.shape, dtype='uint16' if RAW16OUT else 'uint8', buffer=outbuf)
     output[:, :, :] = numpy.round(
