@@ -206,7 +206,7 @@ if PLOT > 0:
     matplotlib.pyplot.show()
 else:
     if LIMITED or RAW16OUT:
-        if convmatrix is not None:
+        if FILEIN is not None or convmatrix is not None:
             outdata *= 219.0
             outdata += 16.0
         else:
@@ -217,7 +217,7 @@ else:
         if RAW16OUT:
             outdata *= 256.0
     else:
-        if convmatrix is None:
+        if FILEIN is None and convmatrix is None:
             outdata[1:] += 0.5
         outdata *= 255.0
 
