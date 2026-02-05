@@ -6,6 +6,7 @@ import numpy
 import scipy.interpolate
 import vapoursynth
 
+os.chdir(os.pardir)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 

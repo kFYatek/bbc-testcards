@@ -24,30 +24,33 @@ Contents
 
 * [INFO.md](./INFO.md) - technical information about where to get the transport
   stream recording, what tests cards are in there, etc.
-* [extract.vpy](./extract.vpy) -
-  [VapourSynth](https://github.com/vapoursynth/vapoursynth) script used to
-  extract and initially process the test cards from the transport stream
-  * Requires [BestSource](https://github.com/vapoursynth/bestsource) and
-    [Descale](https://github.com/Jaded-Encoding-Thaumaturgy/vapoursynth-descale)
-    to be installed and auto-loaded
-  * Processing includes a non-linear luminance curve to undo the non-linearity
-    present in the transport stream. See the description of Test Card X in
-    `INFO.md` for details.
-* [convert.py](./convert.py) - a script that converts the raw output from
-  VapourSynth into a more sensible format, PNG by default. Can also convert
-  between full and limited color ranges. Writes the output to stdout.
-* [convertsigned.py](./convertsigned.py) - converts the output of `convert.py`
-  in the `RAW16OUT` mode between unsigned (0..65535, default) and signed
-  (-32768..32767) formats. The conversion is symmetrical, so it can be used
-  either way. Signed data is handy for viewing the waveform... in audio editors,
-  like Audacity. Might be convenient for visual inspection.
-* [generate.sh](./generate.sh) - a quick and dirty script that builds images for
-  all the supported test cards.
-* [common.py](./common.py) - some type definitions and test card metadata shared
-  between scripts
-* [eqcurve601.py](./eqcurve601.py), [eqcurve709.py](./eqcurve709.py) - quick and
-  dirty scripts for generating the precorrection curves used in `extract.vpy`.
-  Note that they have been manually tweaked afterwards.
+* `scripts`
+    * [extract.vpy](./scripts/extract.vpy) -
+      [VapourSynth](https://github.com/vapoursynth/vapoursynth) script used to
+      extract and initially process the test cards from the transport stream
+        * Requires [BestSource](https://github.com/vapoursynth/bestsource) and
+          [Descale](https://github.com/Jaded-Encoding-Thaumaturgy/vapoursynth-descale)
+          to be installed and auto-loaded
+        * Processing includes a non-linear luminance curve to undo the
+          non-linearity present in the transport stream. See the description of
+          Test Card X in `INFO.md` for details.
+    * [convert.py](./scripts/convert.py) - a script that converts the raw output
+      from VapourSynth into a more sensible format, PNG by default. Can also
+      convert between full and limited color ranges. Writes the output to
+      stdout.
+    * [convertsigned.py](./scripts/convertsigned.py) - converts the output of
+      `convert.py` in the `RAW16OUT` mode between unsigned (0..65535, default)
+      and signed (-32768..32767) formats. The conversion is symmetrical, so it
+      can be used either way. Signed data is handy for viewing the waveform...
+      in audio editors, like Audacity. Might be convenient for visual
+      inspection.
+    * [generate.sh](./scripts/generate.sh) - a quick and dirty script that
+      builds images for all the supported test cards.
+    * [common.py](./scripts/common.py) - some type definitions and test card
+      metadata shared between scripts
+    * [eqcurve601.py](./scripts/eqcurve601.py), [eqcurve709.py](./eqcurve709.py) -
+      quick and dirty scripts for generating the precorrection curves used in
+      `extract.vpy`. Note that they have been manually tweaked afterwards.
 * [TestCardFElec_BarneyWol.xcf](./TestCardFElec_BarneyWol.xcf) - XCF (GIMP) file
   containing features of the electronic version of Test Card F recovered from
   [Barney Wol's archived website](https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html)
