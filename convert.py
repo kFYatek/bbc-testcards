@@ -30,7 +30,7 @@ except Exception:
     SCALE = common.ScalingMode.NONE
 
 if FILEIN is not None:
-    image = PIL.Image.open(FILEIN)
+    image = PIL.Image.open(FILEIN).convert('RGB')
     width = image.width
     height = image.height
     rgbdata = numpy.array(image.get_flattened_data())
