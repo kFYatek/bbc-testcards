@@ -1,19 +1,21 @@
 # Test card information
 
 * Source: `This Is BBC HD_20130326_0120.ts`
-  * Link: https://dl.dropbox.com/s/pk4bvdnqd6yttyn/This%20Is%20BBC%20HD_20130326_0120.zip
-  * Found in: https://hummy.tv/forum/threads/lip-sync-issue.10905/page-4
-  * Captured from DVB-T2 broadcast
-  * Second-generation re-encodes are also available on YouTube and various other
-    places. This is a high-quality re-encode:
-    https://www.youtube.com/watch?v=KSFgolB7HHE - it may also be appropriate as
-    a source, but frame numbers will probably need to be adjusted.
+    * Link:
+      https://dl.dropbox.com/s/pk4bvdnqd6yttyn/This%20Is%20BBC%20HD_20130326_0120.zip
+    * Found in: https://hummy.tv/forum/threads/lip-sync-issue.10905/page-4
+    * Captured from DVB-T2 broadcast
+    * Second-generation re-encodes are also available on YouTube and various
+      other places. This is a high-quality
+      re-encode: https://www.youtube.com/watch?v=KSFgolB7HHE - it may also be
+      appropriate as a source, but frame numbers will probably need to be
+      adjusted.
 * Resolution: 1920x1080
 * Pixel format: YUV 4:2:0 8-bit
 * Color range: Limited (MPEG) - 16-235
 * Color space: BT.709
-  * Note: SD test cards appear to be BT.601 data shown as BT.709 without proper
-    conversion
+    * Note: SD test cards appear to be BT.601 data shown as BT.709 without
+      proper conversion
 
 ## HD test cards
 
@@ -22,27 +24,30 @@
 * Timecode: 00:24.000
 * Native format: 1920x1080 BT.709
 * Note: "Test Card X" is not an official designation
-* Alternate source: https://tvark.org/media/1998i/testcards/images/169_testcards/BBCHD_testcard_big.jpg
-  * The version from the TS has a different variant of the BBC HD logo
-  * The version from the TS has non-linear luminance response. This JPEG version
-    has been used as reference to create the correction curve in `extract.vpy`
-  * The JPEG version has 100% color bars, and the green square above the
-    photograph is also 100% green. The TS version has darker color bars, about
-    85% intensity, and a matching green square. Other colors seem to match, as
-    evident by the U/V gradients at the bottom, and the Carole Hersee photo.
-    The U/V castellations on the left are slightly different shades though.
-  * The superblack dot on the grayscale steps is missing in the TS version -
-    this is probably an error related to the non-linearity and should be
-    reconstructed.
-  * The frequency gratings look sharper and more uniform in the JPEG version.
-    This may be their desired appearance, or may be an artifact of
-    oversharpening.
-    * Juding from https://www.bbc.co.uk/blogs/bbcinternet/2008/12/a_christmas_present_from_the_h.html
-      and https://www.flickr.com/photos/bbccouk/3113496466/ (reisze to 194x554
-      to match), the TS version is more accurate.
-    * We might try recreating the gratings locally, keeping in mind that they
-      are 5, 10, 15, 20, 25 and 30 MHz, and the assumed sample rate is 74.25 MHz
-      (so the period of the first grating is 14.85 pixels)
+* Alternate source:
+  https://tvark.org/media/1998i/testcards/images/169_testcards/BBCHD_testcard_big.jpg
+    * The version from the TS has a different variant of the BBC HD logo
+    * The version from the TS has non-linear luminance response. This JPEG
+      version has been used as reference to create the correction curve in
+      `extract.vpy`
+    * The JPEG version has 100% color bars, and the green square above the
+      photograph is also 100% green. The TS version has darker color bars, about
+      85% intensity, and a matching green square. Other colors seem to match, as
+      evident by the U/V gradients at the bottom, and the Carole Hersee photo.
+      The U/V castellations on the left are slightly different shades though.
+    * The superblack dot on the grayscale steps is missing in the TS version -
+      this is probably an error related to the non-linearity and should be
+      reconstructed.
+    * The frequency gratings look sharper and more uniform in the JPEG version.
+      This may be their desired appearance, or may be an artifact of
+      oversharpening.
+        * Juding from
+          https://www.bbc.co.uk/blogs/bbcinternet/2008/12/a_christmas_present_from_the_h.html
+          and https://www.flickr.com/photos/bbccouk/3113496466/ (reisze to
+          194x554 to match), the TS version is more accurate.
+        * We might try recreating the gratings locally, keeping in mind that
+          they are 5, 10, 15, 20, 25 and 30 MHz, and the assumed sample rate is
+          74.25 MHz (so the period of the first grating is 14.85 pixels)
 
 ### Test Card 3D
 
@@ -111,12 +116,22 @@ available pictures of the originals.
 * Timecode: 02:40.280
 * Native format: 405 lines (4:3)
 * 1920x1080 -> 936x378, crop to 720x378
+* Alternate source: software for
+  [Richard T. Russell](https://en.wikipedia.org/wiki/Richard_T._Russell)'s
+  [Programmable Colour Test Card Generator](https://www.bbcbasic.co.uk/tccgen/tccgen.html)
+  from 2003 includes a 640x468 GIF file that is very clearly the same
+  reproduction
 
 ### Test Card D
 
 * Timecode: 03:00.440
 * Native format: 405 lines (4:3)
 * 1920x1080 -> 936x378, crop to 720x378
+* Alternate source: software for
+  [Richard T. Russell](https://en.wikipedia.org/wiki/Richard_T._Russell)'s
+  [Programmable Colour Test Card Generator](https://www.bbcbasic.co.uk/tccgen/tccgen.html)
+  from 2003 includes a 640x468 GIF file that is very clearly the same
+  reproduction, with minor differences in frequency gratings
 
 ## 625-line test cards
 
@@ -137,7 +152,8 @@ available pictures of the originals.
 * Comparison reference source: https://www.domesday86.com/?page_id=1332
   (Community South test-card 2) - sampled at 4fSC (17734475 Hz, or perhaps
   17734375 Hz)
-* Closeups: https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html -
+* Closeups:
+  https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html -
   apparently sampled at square pixels (14769230.(769230) Hz, or perhaps
   14765625 Hz) - recovered and arranged on
   [TestCardFElec_BarneyWol.xcf](./TestCardFElec_BarneyWol.xcf)
@@ -151,8 +167,8 @@ available pictures of the originals.
 * Native format: 625 lines PAL (4:3)
 * 1920x1080 -> 936x576, crop to 720x576
 * Maybe use Test Card X for detail reconstruction
-  * castellation colors are raw data in different formats (BT.601 vs. BT.709)
-  * photograph colors are supposed to be properly converted
+    * castellation colors are raw data in different formats (BT.601 vs. BT.709)
+    * photograph colors are supposed to be properly converted
 * Animation reference: https://www.youtube.com/watch?v=IcN52H9x2oU
 * Sample 534 is 0.3 samples before peak of the frequency test
 
@@ -173,15 +189,16 @@ available pictures of the originals.
 * Add the missing side reflections
 * 2560x1080 -> 936x576, crop to 720x576
 * Maybe use Test Card X for detail reconstruction
-  * castellation colors are raw data in different formats (BT.601 vs. BT.709)
-  * photograph colors are supposed to be properly converted
+    * castellation colors are raw data in different formats (BT.601 vs. BT.709)
+    * photograph colors are supposed to be properly converted
 
 ## Missing but notable
 
 ### Test Card G
 
 * Needs to be sourced elsewhere
-* Description: https://web.archive.org/web/20160304070245/http://www.pembers.freeserve.co.uk/Test-Cards/Test-Card-Technical.html#PM5544
+* Description:
+  https://web.archive.org/web/20160304070245/http://www.pembers.freeserve.co.uk/Test-Cards/Test-Card-Technical.html#PM5544
 * Capture: https://tvark.org/bbc2-trade-test-transmission - sampled at square
   pixels (14769230.(769230) Hz, or perhaps 14765625 Hz)
 * Reference for the frequency gratings:
@@ -191,8 +208,10 @@ available pictures of the originals.
 ### Test Card J (525-line)
 
 * Needs to be remade
-* Description and reference: https://web.archive.org/web/20120321124821/http://www.barney-wol.net/video/testcardj/testcardj.html
-* Additional description and reference: https://web.archive.org/web/20160304070245/http://www.pembers.freeserve.co.uk/Test-Cards/Test-Card-Technical.html#TCJ-W
+* Description and reference:
+  https://web.archive.org/web/20120321124821/http://www.barney-wol.net/video/testcardj/testcardj.html
+* Additional description and reference:
+  https://web.archive.org/web/20160304070245/http://www.pembers.freeserve.co.uk/Test-Cards/Test-Card-Technical.html#TCJ-W
 * This is a full (not DV) frame signal: 720x486
 
 # Digitizing 405-line system
