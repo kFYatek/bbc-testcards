@@ -9,6 +9,10 @@ export SCALE
 env CARD=0 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - | env COLORSPACE=709 RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 1920x1080 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-709-video16-v4.icc" "$OUTDIR/TestCardX.png"
 env CARD=13 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - | env COLORSPACE=709 RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 1920x1080 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-709-video16-v4.icc" "$OUTDIR/TestCard3D.png"
 
+# Mechanical test cards, don't scale for now
+env CARD=1 COLORCONV=2 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - | env RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 1920x1080 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" "$OUTDIR/TelevisionEye.png"
+env CARD=3 COLORCONV=2 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - | env RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 1920x1080 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" "$OUTDIR/CircleAndLine.png"
+
 # Test Cards A and B are high-res reproductions, just scale them down
 env CARD=4 SCALER=ewa_lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - | env RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 720x378 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" "$OUTDIR/TestCardA.png"
 env CARD=5 SCALER=ewa_lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - | env RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 720x378 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" "$OUTDIR/TestCardB.png"
