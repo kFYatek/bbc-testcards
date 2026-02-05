@@ -5,6 +5,9 @@ import collections
 import PIL.Image
 import numpy
 
+if not 'get_flattened_data' in PIL.Image.Image.__dict__.keys():
+    PIL.Image.Image.get_flattened_data = PIL.Image.Image.getdata
+
 tsimg = PIL.Image.open('TestCardX.png')
 refimg = PIL.Image.open('Test-Card-X-Reference.jpg')
 

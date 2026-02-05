@@ -8,6 +8,9 @@ import scipy.signal
 
 import common
 
+if not 'get_flattened_data' in PIL.Image.Image.__dict__.keys():
+    PIL.Image.Image.get_flattened_data = PIL.Image.Image.getdata
+
 try:
     COLORSPACE = common.ColorSpace(int(os.environ.get('COLORSPACE')))
 except Exception:

@@ -5,6 +5,9 @@ import collections
 import PIL.Image
 import numpy
 
+if not 'get_flattened_data' in PIL.Image.Image.__dict__.keys():
+    PIL.Image.Image.get_flattened_data = PIL.Image.Image.getdata
+
 tsimg = PIL.Image.open('TestCardWCalib.png')
 
 tsdata = numpy.array(tsimg.get_flattened_data()).reshape((tsimg.height, tsimg.width, 3))
