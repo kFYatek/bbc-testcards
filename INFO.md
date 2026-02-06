@@ -48,6 +48,11 @@
         * We might try recreating the gratings locally, keeping in mind that
           they are 5, 10, 15, 20, 25 and 30 MHz, and the assumed sample rate is
           74.25 MHz (so the period of the first grating is 14.85 pixels)
+* Features to reconstruct in addition to general cleanup:
+    * Superblack dot on the grayscale steps. Goes all the way to absolute zero.
+    * Sawtooth in the far lower-left corner goes all the way to 12 (-2%),
+      mirroring how it goes on to 240 (~102%) on the brightest side.
+    * Color bars on the sides are supposed to be non-antialiased
 
 ### Test Card 3D
 
@@ -56,22 +61,33 @@
 * This doesn't seem to have anything interesting, it's just two Test Card X's
   side-by-side at half the horizontal resolution. Only the BBC logo in the
   corner is off-plane.
+* Features to reconstruct in addition to general cleanup:
+    * Superblack dot on the grayscale steps. Goes all the way to absolute zero.
+    * Sawtooth in the far lower-left corner goes all the way to 11 (-2%),
+      mirroring how it goes on to 240 (102%) on the brightest side.
 
 ## Mechanical TV test cards
 
 These are not being "recovered" in any meaningful way. They were originally
-crude paper cards, and these are modern recreations. Ideas for converting into
-an appropriate signal are TBD. Note: hacktv supports this system.
+crude paper cards, and these are modern recreations.
+
+The Baird Televisor reportedly had a roughly linear transfer characteristic
+between signal level and light intensity (so: gamma 1.0), as opposed to gamma
+2.4 assumed for displays showing BT.601 and BT.709 content.
 
 ### Television Eye
 
 * Timecode: 01:02.280
 * Native format: 30-line mechanical
+* 648x1080 -> 42x70, crop to 30x70
+* Image has been apparently processed like the SD images
 
 ### Circle and line
 
 * Timecode: 01:40.200
 * Native format: 30-line mechanical
+* 1440x1080, pad to 1440x3360 -> 30x70
+* Image has been apparently processed like the SD images
 
 ## 405-line test cards - high-res recreations
 
@@ -82,6 +98,8 @@ they were always like that?
 
 They are probably OK to just resize and use like that - they won't get more
 accurate than optical slides that were originally used.
+
+They were processed the same way as SD images.
 
 ### Test Card A
 
@@ -110,6 +128,13 @@ available pictures of the originals.
 * Timecode: 01:21.240
 * Native format: 405 lines (5:4)
 * 1400x1080 -> 728x378, crop to 720x378
+* Alternate source:
+  https://tvark.org/media/1998i/2020-05-15/d0bfa1fd2a9191224e10dafe9d9fc321dc254d80.jpg
+    * When resized to 1274x1046, this perfectly matches the transport stream,
+      origin at (324, 17)
+    * Pixel values are already in the right (16-235) range
+    * Reconstruction idea: resize 1400x1080 to 844x595, paste the alternative
+      source onto that, resize from there to 728x378, crop to 720x378
 
 ### Test Card C
 
@@ -141,8 +166,16 @@ available pictures of the originals.
 * Native format: 625 lines PAL (4:3)
 * 1920x1080 -> 936x576, crop to 720x576
 * This looks like a digital recreation of the original slide. A simple resize
-  should outmatch the quality of the original slide. The digital color bars
-  overlaid at the top should probably be remade.
+  should outmatch the quality of the original slide.
+* Features to reconstruct in addition to general cleanup:
+    * Electronic color bars overlaid at the top
+        * Judging from https://tvark.org/bbc2-trade-test-transmission-2 and
+          https://tvark.org/bbc2-testcard-illustration, the electronic color
+          bars shall occupy the first 24 lines of the picture and have a hard
+          cutoff.
+        * It seems that the very first line is pure white and starts late
+          (note that it is normally a half-line, but active picture still starts
+          in the left half of the picture.
 
 ### Test Card F (electronic)
 
@@ -171,6 +204,8 @@ available pictures of the originals.
     * photograph colors are supposed to be properly converted
 * Animation reference: https://www.youtube.com/watch?v=IcN52H9x2oU
 * Sample 534 is 0.3 samples before peak of the frequency test
+* Features to reconstruct in addition to general cleanup:
+    * Superblack dot on the grayscale steps. Goes all the way to absolute zero.
 
 ### Test Card F widescreen
 
@@ -191,6 +226,16 @@ available pictures of the originals.
 * Maybe use Test Card X for detail reconstruction
     * castellation colors are raw data in different formats (BT.601 vs. BT.709)
     * photograph colors are supposed to be properly converted
+* Features to reconstruct in addition to general cleanup:
+    * Superblack dot on the grayscale steps. Goes all the way to absolute zero.
+    * The grayscale swipes in the bottom-left corner extend linearly all the
+      way, including the leftmost digital edge.
+    * The top and bottom lines are spaced way more densely, see
+      https://www.youtube.com/watch?v=Xqn-EeRawmQ - that's about 10% denser than
+      WSS signaling.
+    * Color bars on the sides are supposed to be non-antialiased
+    * Detailed information:
+      https://web.archive.org/web/20060207093007/http://www.barney-wol.net/video/testcardw/testcardw.html
 
 ## Missing but notable
 
