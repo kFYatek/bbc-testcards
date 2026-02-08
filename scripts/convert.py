@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import math
 import os
 
 import PIL.Image
@@ -195,15 +196,42 @@ if PLOT > 0:
     slider = matplotlib.widgets.Slider(slider_frame, 'Line', 0, outdata.shape[1] - 1, valinit=0,
                                        valfmt='%d')
 
+    lineno = 0
+    freq = None
+
+
+    def update_title():
+        title = f'Line {lineno}'
+        if freq is not None:
+            title += f' || Dominant frequency: {freq:.6g} * fS'
+        subplot.set_title(title)
+
+
+    def measure_frequency(axes):
+        global freq
+        left, right = subplot.get_xlim()
+        left = max(int(math.floor(left * UPSAMPLE)), 0)
+        right = min(int(math.ceil(right * UPSAMPLE)), outdata.shape[2] - 1)
+        if left == right:
+            freq = None
+        else:
+            input = outdata[PLOT - 1, lineno][left:right + 1]
+            fft = numpy.fft.rfft(input)
+            domf = numpy.argmax(numpy.abs(fft[1:]))
+            freq = (domf + 1) * UPSAMPLE / len(input)
+        update_title()
+
 
     def slider_update(val):
+        global lineno
         lineno = int(numpy.floor(slider.val))
         mpline.set_ydata(outdata[PLOT - 1, lineno] * PLOTSCALE)
-        subplot.set_title(f'Line {lineno}')
         subplot.relim()
         matplotlib.pyplot.draw()
+        measure_frequency(None)
 
 
+    subplot.callbacks.connect('xlim_changed', measure_frequency)
     slider.on_changed(slider_update)
     slider_update(0)
     matplotlib.pyplot.show()
