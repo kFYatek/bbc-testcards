@@ -174,6 +174,31 @@ if PLOT > 0:
     import matplotlib.pyplot
     import matplotlib.widgets
 
+    if dimensions is None:
+        if CARD is not None:
+            orig_resolution = CARD.mode
+        elif height <= 405:
+            orig_resolution = common.OriginalResolution.SYSA43
+        elif height <= 625:
+            orig_resolution = common.OriginalResolution.PAL43
+        elif height == 1080:
+            orig_resolution = common.OriginalResolution.HD1080
+        else:
+            orig_resolution = None
+
+        if orig_resolution is not None:
+            for scaling_mode in common.ScalingMode:
+                if scaling_mode is not common.ScalingMode.NONE:
+                    candidate = common.get_scaling_dimensions(scaling_mode, orig_resolution)
+                    if candidate.crop_w == outdata.shape[2]:
+                        dimensions = candidate
+                        break
+
+    if dimensions is not None:
+        sample_rate_mhz = dimensions.sample_rate_mhz
+    else:
+        sample_rate_mhz = None
+
     UPSAMPLE = 32
     outdata = resample_with_mirrors(outdata, outdata.shape[2] * UPSAMPLE, axis=2)
     xdata = numpy.array(range(outdata.shape[2])) / UPSAMPLE
@@ -203,7 +228,10 @@ if PLOT > 0:
     def update_title():
         title = f'Line {lineno}'
         if freq is not None:
-            title += f' || Dominant frequency: {freq:.6g} * fS'
+            freq_text = f'{freq:.6g} * fS'
+            if sample_rate_mhz is not None:
+                freq_text = f'{freq * sample_rate_mhz:.6g} MHz ({freq_text})'
+            title += ' || Dominant frequency: ' + freq_text
         subplot.set_title(title)
 
 

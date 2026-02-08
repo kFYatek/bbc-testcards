@@ -45,49 +45,52 @@ class ScalingDimensions(typing.NamedTuple):
     scale_w: int
     crop_w: int
     scale_h: int
+    sample_rate_mhz: float
 
 
 def get_scaling_dimensions(scaling_mode: ScalingMode, original_resolution: OriginalResolution) -> \
         typing.Optional[ScalingDimensions]:
-    if scaling_mode is ScalingMode.NONE or original_resolution is OriginalResolution.HD1080:
+    if scaling_mode is ScalingMode.NONE:
         return None
+    elif original_resolution is OriginalResolution.HD1080:
+        return ScalingDimensions(1920, 1920, 1920, 1080, 74.25)
 
     if scaling_mode is ScalingMode.VERTICAL:
         if original_resolution is OriginalResolution.PAL169:
-            return ScalingDimensions(2560, 2560, 1970, 576)
+            return ScalingDimensions(2560, 2560, 1970, 576, 36.92307692307692)
         elif original_resolution is OriginalResolution.PAL43:
-            return ScalingDimensions(1920, 1920, 1478, 576)
+            return ScalingDimensions(1920, 1920, 1478, 576, 27.692307692307693)
         elif original_resolution is OriginalResolution.SYSA43:
-            return ScalingDimensions(1920, 1920, 1478, 378)
+            return ScalingDimensions(1920, 1920, 1478, 378, 17.944615384615386)
         elif original_resolution is OriginalResolution.SYSA54:
-            return ScalingDimensions(1920, 1920, 1386, 378)
+            return ScalingDimensions(1920, 1920, 1386, 378, 16.823076923076922)
     elif scaling_mode is ScalingMode.CANONICAL:
         if original_resolution is OriginalResolution.PAL169:
-            return ScalingDimensions(2560, 936, 720, 576)
+            return ScalingDimensions(2560, 936, 720, 576, 13.5)
         elif original_resolution is OriginalResolution.PAL43:
-            return ScalingDimensions(1920, 936, 720, 576)
+            return ScalingDimensions(1920, 936, 720, 576, 13.5)
         elif original_resolution is OriginalResolution.SYSA43:
-            return ScalingDimensions(1920, 936, 720, 378)
+            return ScalingDimensions(1920, 936, 720, 378, 8.748)
         elif original_resolution is OriginalResolution.SYSA54:
-            return ScalingDimensions(1400, 728, 720, 378)
+            return ScalingDimensions(1400, 728, 720, 378, 8.748)
     elif scaling_mode is ScalingMode.SQUARE_PIXELS:
         if original_resolution is OriginalResolution.PAL169:
-            return ScalingDimensions(1980, 1056, 1052, 576)
+            return ScalingDimensions(1980, 1056, 1052, 576, 19.692307692307693)
         elif original_resolution is OriginalResolution.PAL43:
-            return ScalingDimensions(1920, 1024, 788, 576)
+            return ScalingDimensions(1920, 1024, 788, 576, 14.76923076923077)
         elif original_resolution is OriginalResolution.SYSA43:
-            return ScalingDimensions(1480, 518, 518, 378)
+            return ScalingDimensions(1480, 518, 518, 378, 6.280615384615385)
         elif original_resolution is OriginalResolution.SYSA54:
-            return ScalingDimensions(1400, 490, 486, 378)
+            return ScalingDimensions(1400, 490, 486, 378, 5.888076923076923)
     elif scaling_mode is ScalingMode.PAL_4FSC:
         if original_resolution is OriginalResolution.PAL169:
-            return ScalingDimensions(12288, 5902, 946, 576)
+            return ScalingDimensions(12288, 5902, 946, 576, 17.734375)
         elif original_resolution is OriginalResolution.PAL43:
-            return ScalingDimensions(9216, 5902, 946, 576)
+            return ScalingDimensions(9216, 5902, 946, 576, 17.734375)
         elif original_resolution is OriginalResolution.SYSA43:
-            return ScalingDimensions(9216, 5902, 946, 378)
+            return ScalingDimensions(9216, 5902, 946, 378, 11.491875)
         elif original_resolution is OriginalResolution.SYSA54:
-            return ScalingDimensions(8640, 5902, 946, 378)
+            return ScalingDimensions(8640, 5902, 946, 378, 11.491875)
 
 
 CARDS = [TestCardDefinition('Test Card X', 600, OriginalResolution.HD1080),
