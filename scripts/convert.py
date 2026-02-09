@@ -244,9 +244,14 @@ if PLOT > 0:
             freq = None
         else:
             input = outdata[PLOT - 1, lineno][left:right + 1]
-            fft = numpy.fft.rfft(input)
-            domf = numpy.argmax(numpy.abs(fft[1:]))
-            freq = (domf + 1) * UPSAMPLE / len(input)
+            fft = numpy.fft.rfft(input - numpy.mean(input))
+            logfft = numpy.log(numpy.abs(fft))
+            domf = numpy.argmax(numpy.abs(fft))
+            if domf > 0 and domf < len(fft) - 1:
+                # Parabolic interpolation
+                domf = 0.5 * (logfft[domf - 1] - logfft[domf + 1]) / (
+                        logfft[domf - 1] - 2.0 * logfft[domf] + logfft[domf + 1]) + domf
+            freq = domf * UPSAMPLE / len(input)
         update_title()
 
 
