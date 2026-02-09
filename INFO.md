@@ -183,13 +183,11 @@ available pictures of the originals.
 * Native format: 625 lines PAL (4:3)
 * 1920x1080 -> 936x576, crop to 720x576
 * Comparison reference source: https://www.domesday86.com/?page_id=1332
-  (Community South test-card 2) - sampled at 4fSC (17734475 Hz, or perhaps
-  17734375 Hz)
+  (Community South test-card 2) - sampled at 4fSC (17734475 Hz)
 * Closeups:
   https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html -
-  apparently sampled at square pixels (14769230.(769230) Hz, or perhaps
-  14765625 Hz) - recovered and arranged on
-  [TestCardFElec_BarneyWol.xcf](./TestCardFElec_BarneyWol.xcf)
+  apparently sampled at square pixels (14769230.(769230) Hz) - recovered and
+  arranged on [TestCardFElec_BarneyWol.xcf](./TestCardFElec_BarneyWol.xcf)
 * Note: `src_left` is deliberately set to offset the center by half-pixel,
   to match the closeups mentioned above.
 * The very top and very bottom lines are seemingly supposed to be empty.
@@ -244,11 +242,15 @@ available pictures of the originals.
 * Needs to be sourced elsewhere
 * Description:
   https://web.archive.org/web/20160304070245/http://www.pembers.freeserve.co.uk/Test-Cards/Test-Card-Technical.html#PM5544
-* Capture: https://tvark.org/bbc2-trade-test-transmission - sampled at square
-  pixels (14769230.(769230) Hz, or perhaps 14765625 Hz)
-* Reference for the frequency gratings:
-  https://www.domesday86.com/?page_id=1332 (Jason test-card 5) - sampled at 4fSC
-  (17734475 Hz, or perhaps 17734375 Hz)
+* Various low-quality captures:
+  * https://tvark.org/bbc2-engineering-test-transmission (square pixels)
+  * https://rewind.thetvroom.com/26762/test-cards/bbc-two-test-card-g-bbc-scotland-generator-1980s/
+  * https://www.domesday86.com/?page_id=1332 (Jason test-card 5) - sampled at
+    4fSC (17734475 Hz) - not Test Card G, both colors and frequencies are wrong
+* Wikipedia's recreation at
+  https://en.wikipedia.org/wiki/File:PM5544_(Testcard_G_variation).png has many
+  inaccuracies, but the frequency gratings seem to be accurate in frequency
+  and timing
 
 ### Test Card J (525-line)
 
