@@ -167,7 +167,7 @@ if COLORCONV is common.ColorConversion.FORCE601TO709:
     clip = vapoursynth.core.resize.Point(clip, matrix=vapoursynth.MATRIX_BT709,
                                          transfer=vapoursynth.TRANSFER_BT709,
                                          primaries=vapoursynth.PRIMARIES_BT709)
-elif COLORCONV is common.ColorConversion.FORCE601 or (
+elif COLORCONV in (common.ColorConversion.FORCE601, common.ColorConversion.LINEAR) or (
         COLORCONV is common.ColorConversion.AUTO and CARD.mode is not common.OriginalResolution.HD1080):
     # It looks that the SD test cards have converted matrix, but not primaries
     clip = vapoursynth.core.resize.Point(clip, format=vapoursynth.YUV444PS)
@@ -212,6 +212,9 @@ vclip = vapoursynth.core.std.Lut(vclip, function=correct_uv, floatout=True)
 
 clip = vapoursynth.core.std.ShufflePlanes([yclip, uclip, vclip], planes=[0, 0, 0],
                                           colorfamily=vapoursynth.YUV, prop_src=clip)
+
+if COLORCONV is common.ColorConversion.LINEAR:
+    clip = vapoursynth.core.resize.Point(clip, transfer=vapoursynth.TRANSFER_LINEAR)
 
 # Resizing
 dimensions = common.get_scaling_dimensions(SCALE, CARD.mode)

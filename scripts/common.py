@@ -22,6 +22,7 @@ class ColorConversion(enum.Enum):
     AUTO = 1
     FORCE601 = 2
     FORCE601TO709 = 3
+    LINEAR = 4
 
 
 class OriginalResolution(enum.Enum):
