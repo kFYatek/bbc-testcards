@@ -34,14 +34,23 @@ except Exception:
     SCALE = common.ScalingMode.NONE
 
 if FILEIN is not None:
-    image = PIL.Image.open(FILEIN).convert('RGB')
+    image = PIL.Image.open(FILEIN)
     width = image.width
     height = image.height
-    rgbdata = numpy.array(image.get_flattened_data())
-    rgbdata = rgbdata.reshape((height, width, 3))
-    rgbdata = (rgbdata - 16.0) / 219.0
-    rgbdata = rgbdata.transpose((2, 0, 1))
+    if image.mode.startswith('I;16'):
+        rgbdata = numpy.array(image.get_flattened_data())
+        rgbdata = rgbdata.reshape((1, height, width))
+        rgbdata = (rgbdata - 4096.0) / 56064.0
+        rgbdata = rgbdata.repeat(3, axis=0)
+    else:
+        image = image.convert('RGB')
+        rgbdata = numpy.array(image.get_flattened_data())
+        rgbdata = rgbdata.reshape((height, width, 3))
+        rgbdata = (rgbdata - 16.0) / 219.0
+        rgbdata = rgbdata.transpose((2, 0, 1))
 
+    if COLORSPACE is common.ColorSpace.GRAYSCALE:
+        convmatrix = numpy.array([[0.299, 0.587, 0.114], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
     if COLORSPACE is common.ColorSpace.BT601:
         convmatrix = numpy.array(
             [[0.299, 0.587, 0.114], [-0.16873589164785552, -0.3312641083521445, 0.5],
@@ -156,7 +165,9 @@ if dimensions is not None:
         yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.crop_w) // 2:]
         yuvdata = yuvdata[:, :, :dimensions.crop_w]
 
-if FILEIN is None and COLORSPACE is common.ColorSpace.BT601:
+if FILEIN is None and COLORSPACE is common.ColorSpace.GRAYSCALE:
+    convmatrix = numpy.array([[1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
+elif FILEIN is None and COLORSPACE is common.ColorSpace.BT601:
     convmatrix = numpy.array(
         [[1.0, 0.0, 1.402], [1.0, -0.34413628620102216, -0.7141362862010221], [1.0, 1.772, 0.0]])
 elif FILEIN is None and COLORSPACE is common.ColorSpace.BT709:
@@ -245,12 +256,16 @@ if PLOT > 0:
         else:
             input = outdata[PLOT - 1, lineno][left:right + 1]
             fft = numpy.fft.rfft(input - numpy.mean(input))
-            logfft = numpy.log(numpy.abs(fft))
             domf = numpy.argmax(numpy.abs(fft))
             if domf > 0 and domf < len(fft) - 1:
+                domf_pre = numpy.abs(fft[domf - 1])
+                domf_peak = numpy.abs(fft[domf])
+                domf_post = numpy.abs(fft[domf + 1])
                 # Parabolic interpolation
-                domf = 0.5 * (logfft[domf - 1] - logfft[domf + 1]) / (
-                        logfft[domf - 1] - 2.0 * logfft[domf] + logfft[domf + 1]) + domf
+                if domf_pre != 0 and domf_peak != 0 and domf_post != 0:
+                    domf = domf + numpy.log(domf_pre / domf_post) / numpy.log(
+                        domf_pre * domf_pre * domf_post * domf_post / (
+                                domf_peak * domf_peak * domf_peak * domf_peak))
             freq = domf * UPSAMPLE / len(input)
         update_title()
 

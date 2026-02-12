@@ -5,6 +5,7 @@ import typing
 
 class ColorSpace(enum.Enum):
     YUV = 0
+    GRAYSCALE = 1
     BT601 = 601
     BT709 = 709
 
