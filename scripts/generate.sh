@@ -3,7 +3,14 @@ set -e
 OUTDIR="${OUTDIR:=.}"
 SCRIPTDIR="$(dirname "$0")"
 SCALE=
+TMPFILES=
 export SCALE
+
+remove_tmpfiles() {
+    rm -f $TMPFILES
+}
+
+trap remove_tmpfiles EXIT
 
 # HD testcards, never scale
 env CARD=0 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - | env COLORSPACE=709 RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 1920x1080 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-709-video16-v4.icc" -define png:color-type=2 "$OUTDIR/TestCardX.png"
@@ -42,8 +49,23 @@ for CARD in C D; do
         -define png:color-type=0 "$OUTDIR/TestCard$CARD.png"
 done
 
-# These test cards look like JPEGs, but they were originally optical, so just scale them down with more aggressive antiringing
-env CARD=2 SCALE=1 SCALER=lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - | env CARD=2 SCALE=2 COLORSPACE=1 RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 720x378 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-1886-gray-video16-v4.icc" -define png:color-type=0 "$OUTDIR/TuningSignal.png"
+# Compose the Tuning signal from both sources
+FGFILE="$(mktemp)"
+TMPFILES="$TMPFILES $FGFILE"
+magick "$SCRIPTDIR/../d0bfa1fd2a9191224e10dafe9d9fc321dc254d80.jpg" \
+    -type GrayScaleAlpha -fuzz '3%' -fill none -draw "color 3,2 floodfill" \
+    -crop 764x576+2+0 png:"$FGFILE"
+env CARD=2 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - | env LIMITED=1 RAW16OUT= "$SCRIPTDIR/convert.py" \
+| magick png:- -crop 1400x1080+260+0 -filter Lanczos -resize 844x595\! \
+    -evaluate Pow 1.15 -evaluate Max 6.275% png:"$FGFILE" -geometry +41+9 -composite png:"$FGFILE"
+"$SCRIPTDIR/fftresize.py" "$FGFILE" 720 595 \
+| magick -size 720x595 -depth 16 gray:- \
+    -filter Point -resize 7200x595\! -filter Gaussian -resize 7200x378\! \
+    -filter Point -resize 720x378\! \
+    +profile icc -profile "$SCRIPTDIR/../ITU-1886-gray-video16-v4.icc" \
+    -define png:color-type=0 "$OUTDIR/TuningSignal.png"
+
+# Recreation of the optical Test Card F - just scale it down with more aggressive antiringing
 env CARD=8 SCALE=1 SCALER=lanczos ANTIRING=2 vspipe "$SCRIPTDIR/extract.vpy" - | env CARD=8 SCALE=2 RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 720x576 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" -define png:color-type=2 "$OUTDIR/TestCardFOpt.png"
 
 # Electronic SD test cards
