@@ -6,11 +6,11 @@ import numpy
 import scipy.interpolate
 import vapoursynth
 
-os.chdir(os.pardir)
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.getcwd())
 import common
 
 del sys.path[0]
+os.chdir(os.pardir)
 
 clip = vapoursynth.core.bs.VideoSource(source='This Is BBC HD_20130326_0120.ts')
 
