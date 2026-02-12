@@ -175,7 +175,8 @@ available pictures of the originals.
           cutoff.
         * It seems that the very first line is pure white and starts late
           (note that it is normally a half-line, but active picture still starts
-          in the left half of the picture.
+          in the left half of the picture). This white line seems to start at
+          about 75% of the magenta bar's width - that's sample 445.
 
 ### Test Card F (electronic)
 
