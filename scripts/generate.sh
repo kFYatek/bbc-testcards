@@ -10,8 +10,23 @@ env CARD=0 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - | env COLORSPACE=709 RAW16O
 env CARD=13 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - | env COLORSPACE=709 RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 1920x1080 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-709-video16-v4.icc" -define png:color-type=2 "$OUTDIR/TestCard3D.png"
 
 # Mechanical test cards, don't scale for now
-env CARD=1 COLORCONV=4 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - | env RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 1920x1080 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../Linear-gray-video16-v4.icc" -define png:color-type=0 "$OUTDIR/TelevisionEye.png"
-env CARD=3 COLORCONV=4 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - | env RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 1920x1080 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../Linear-gray-video16-v4.icc" -define png:color-type=0 "$OUTDIR/CircleAndLine.png"
+env CARD=1 COLORCONV=4 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
+| env RAW16OUT=1 "$SCRIPTDIR/convert.py" \
+| magick -size 1920x1080 -depth 16 rgb:- \
+    -crop 448x1064+736+8 -bordercolor '#eb00eb00eb00' -border 100x8 rgb:- \
+| magick -size 648x1080 -depth 16 rgb: \
+    -filter Lanczos -resize 42x1080\! -crop 30x1080+6+0 -filter Cubic -resize 30x70\! \
+    +profile icc -profile "$SCRIPTDIR/../Linear-gray-video16-v4.icc" \
+    -define png:color-type=0 "$OUTDIR/TelevisionEye.png"
+
+env CARD=3 COLORCONV=4 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
+| env RAW16OUT=1 "$SCRIPTDIR/convert.py" \
+| magick -size 1920x1080 -depth 16 rgb:- \
+    -crop 1420x1012+250+58 -bordercolor '#eb00eb00eb00' -border 10x1174 rgb:- \
+| magick -size 1440x3360 -depth 16 rgb:- \
+    -filter Lanczos -resize 30x3360\! -filter Cubic -resize 30x70\! \
+    +profile icc -profile "$SCRIPTDIR/../Linear-gray-video16-v4.icc" \
+    -define png:color-type=0 "$OUTDIR/CircleAndLine.png"
 
 # Test Cards A and B are high-res reproductions, just scale them down
 env CARD=4 SCALE=1 SCALER=lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - | env CARD=4 SCALE=2 COLORSPACE=1 RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 720x378 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-1886-gray-video16-v4.icc" -define png:color-type=0 "$OUTDIR/TestCardA.png"
