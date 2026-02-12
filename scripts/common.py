@@ -2,6 +2,9 @@
 import enum
 import typing
 
+import numpy
+import scipy.signal
+
 
 class ColorSpace(enum.Enum):
     YUV = 0
@@ -93,6 +96,19 @@ def get_scaling_dimensions(scaling_mode: ScalingMode, original_resolution: Origi
             return ScalingDimensions(9216, 5902, 946, 378, 11.491875)
         elif original_resolution is OriginalResolution.SYSA54:
             return ScalingDimensions(8640, 5902, 946, 378, 11.491875)
+
+
+def resample_with_mirrors(data: numpy.array, new_size: int, axis: int = -1):
+    if axis < 0:
+        axis = len(data.shape) + axis
+    if new_size != data.shape[axis]:
+        data = numpy.swapaxes(data, 0, axis)
+        reversed = numpy.flip(data, axis=0)
+        data = numpy.concatenate([reversed, data, reversed], axis=0)
+        data = scipy.signal.resample(data, 3 * new_size, axis=0)
+        data = data[new_size:2 * new_size]
+        data = numpy.swapaxes(data, 0, axis)
+    return data
 
 
 CARDS = [TestCardDefinition('Test Card X', 600, OriginalResolution.HD1080),

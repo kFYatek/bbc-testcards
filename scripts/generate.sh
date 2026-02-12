@@ -32,10 +32,18 @@ env CARD=3 COLORCONV=4 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
 env CARD=4 SCALE=1 SCALER=lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - | env CARD=4 SCALE=2 COLORSPACE=1 RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 720x378 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-1886-gray-video16-v4.icc" -define png:color-type=0 "$OUTDIR/TestCardA.png"
 env CARD=5 SCALE=1 SCALER=lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - | env CARD=5 SCALE=2 COLORSPACE=1 RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 720x378 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-1886-gray-video16-v4.icc" -define png:color-type=0 "$OUTDIR/TestCardB.png"
 
+# Use Test Cards C and D from Richard T. Russell's GIFs
+for CARD in C D; do
+    "$SCRIPTDIR/fftresize.py" "$SCRIPTDIR/../Test Card $CARD.gif" 720 468 \
+    | magick -size 720x468 -depth 16 gray:- \
+        -filter Point -resize 7200x468\! -filter Gaussian -resize 7200x378\! \
+        -filter Point -resize 720x378\! \
+        +profile icc -profile "$SCRIPTDIR/../ITU-1886-gray-video16-v4.icc" \
+        -define png:color-type=0 "$OUTDIR/TestCard$CARD.png"
+done
+
 # These test cards look like JPEGs, but they were originally optical, so just scale them down with more aggressive antiringing
 env CARD=2 SCALE=1 SCALER=lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - | env CARD=2 SCALE=2 COLORSPACE=1 RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 720x378 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-1886-gray-video16-v4.icc" -define png:color-type=0 "$OUTDIR/TuningSignal.png"
-env CARD=6 SCALE=1 SCALER=lanczos ANTIRING=1.5 vspipe "$SCRIPTDIR/extract.vpy" - | env CARD=6 SCALE=2 COLORSPACE=1 RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 720x378 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-1886-gray-video16-v4.icc" -define png:color-type=0 "$OUTDIR/TestCardC.png"
-env CARD=7 SCALE=1 SCALER=lanczos ANTIRING=1.5 vspipe "$SCRIPTDIR/extract.vpy" - | env CARD=7 SCALE=2 COLORSPACE=1 RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 720x378 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-1886-gray-video16-v4.icc" -define png:color-type=0 "$OUTDIR/TestCardD.png"
 env CARD=8 SCALE=1 SCALER=lanczos ANTIRING=2 vspipe "$SCRIPTDIR/extract.vpy" - | env CARD=8 SCALE=2 RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 720x576 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" -define png:color-type=2 "$OUTDIR/TestCardFOpt.png"
 
 # Electronic SD test cards

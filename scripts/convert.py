@@ -122,19 +122,6 @@ def apply_shift(data: numpy.array, shift: float, axis: int = -1):
     return data
 
 
-def resample_with_mirrors(data: numpy.array, new_size: int, axis: int = -1):
-    if axis < 0:
-        axis = len(data.shape) + axis
-    if new_size != data.shape[axis]:
-        data = numpy.swapaxes(data, 0, axis)
-        reversed = numpy.flip(data, axis=0)
-        data = numpy.concatenate([reversed, data, reversed], axis=0)
-        data = scipy.signal.resample(data, 3 * new_size, axis=0)
-        data = data[new_size:2 * new_size]
-        data = numpy.swapaxes(data, 0, axis)
-    return data
-
-
 dimensions = None
 src_left = 0.0
 src_top = 0.0
@@ -159,8 +146,8 @@ yuvdata = apply_shift(yuvdata, src_left, axis=2)
 yuvdata = apply_shift(yuvdata, src_top, axis=1)
 
 if dimensions is not None:
-    yuvdata = resample_with_mirrors(yuvdata, dimensions.scale_w, axis=2)
-    yuvdata = resample_with_mirrors(yuvdata, dimensions.scale_h, axis=1)
+    yuvdata = common.resample_with_mirrors(yuvdata, dimensions.scale_w, axis=2)
+    yuvdata = common.resample_with_mirrors(yuvdata, dimensions.scale_h, axis=1)
     if dimensions.crop_w != dimensions.scale_w:
         yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.crop_w) // 2:]
         yuvdata = yuvdata[:, :, :dimensions.crop_w]
@@ -211,7 +198,7 @@ if PLOT > 0:
         sample_rate_mhz = None
 
     UPSAMPLE = 32
-    outdata = resample_with_mirrors(outdata, outdata.shape[2] * UPSAMPLE, axis=2)
+    outdata = common.resample_with_mirrors(outdata, outdata.shape[2] * UPSAMPLE, axis=2)
     xdata = numpy.array(range(outdata.shape[2])) / UPSAMPLE
 
     fig = matplotlib.pyplot.figure()
