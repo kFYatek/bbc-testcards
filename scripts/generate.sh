@@ -50,23 +50,40 @@ for CARD in C D; do
 done
 
 # Compose the Tuning signal from both sources
-FGFILE="$(mktemp)"
-TMPFILES="$TMPFILES $FGFILE"
+TMPIMAGE="$(mktemp)"
+TMPFILES="$TMPFILES $TMPIMAGE"
 magick "$SCRIPTDIR/../d0bfa1fd2a9191224e10dafe9d9fc321dc254d80.jpg" \
     -type GrayScaleAlpha -fuzz '3%' -fill none -draw "color 3,2 floodfill" \
-    -crop 764x576+2+0 png:"$FGFILE"
-env CARD=2 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - | env LIMITED=1 RAW16OUT= "$SCRIPTDIR/convert.py" \
+    -crop 764x576+2+0 png:"$TMPIMAGE"
+env CARD=2 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
+| env LIMITED=1 RAW16OUT= "$SCRIPTDIR/convert.py" \
 | magick png:- -crop 1400x1080+260+0 -filter Lanczos -resize 844x595\! \
-    -evaluate Pow 1.15 -evaluate Max 6.275% png:"$FGFILE" -geometry +41+9 -composite png:"$FGFILE"
-"$SCRIPTDIR/fftresize.py" "$FGFILE" 720 595 \
+    -evaluate Pow 1.15 -evaluate Max 6.275% png:"$TMPIMAGE" -geometry +41+9 -composite \
+    png:"$TMPIMAGE"
+"$SCRIPTDIR/fftresize.py" "$TMPIMAGE" 720 595 \
 | magick -size 720x595 -depth 16 gray:- \
     -filter Point -resize 7200x595\! -filter Gaussian -resize 7200x378\! \
     -filter Point -resize 720x378\! \
     +profile icc -profile "$SCRIPTDIR/../ITU-1886-gray-video16-v4.icc" \
     -define png:color-type=0 "$OUTDIR/TuningSignal.png"
 
-# Recreation of the optical Test Card F - just scale it down with more aggressive antiringing
-env CARD=8 SCALE=1 SCALER=lanczos ANTIRING=2 vspipe "$SCRIPTDIR/extract.vpy" - | env CARD=8 SCALE=2 RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 720x576 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" -define png:color-type=2 "$OUTDIR/TestCardFOpt.png"
+# Recreation of the optical Test Card F
+env CARD=8 SCALE=1 SCALER=lanczos ANTIRING=2 vspipe "$SCRIPTDIR/extract.vpy" - \
+| env CARD=8 SCALE=2 RAW16OUT=1 "$SCRIPTDIR/convert.py" \
+| magick -size 720x576 -depth 16 rgb:- -define png:color-type=2 png:"$TMPIMAGE"
+CARDIMAGE="$(mktemp)"
+TMPFILES="$TMPFILES $CARDIMAGE"
+magick png:"$TMPIMAGE" -crop 720x1+0+26 -filter Point -resize 720x2\! png:- \
+| magick png:"$TMPIMAGE" -crop 720x552+0+24 \
+    png:- -geometry +0+0 -composite png:"$CARDIMAGE"
+magick png:"$TMPIMAGE" -crop 31x4+344+548 -flip png:- \
+| magick png:"$CARDIMAGE" png:- -geometry +344+0 -composite png:"$CARDIMAGE"
+magick png:"$TMPIMAGE" -crop 720x14+0+6 -filter Box -resize 720x1\! -filter Box -resize 720x23\! \
+    png:"$TMPIMAGE"
+"$SCRIPTDIR/tcfopt_firstline.py" \
+| magick -size 720x1 -depth 16 gray:- png:"$TMPIMAGE" -append png:"$CARDIMAGE" -append \
+    +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" \
+    -define png:color-type=2 "$OUTDIR/TestCardFOpt.png"
 
 # Electronic SD test cards
 env CARD=9 SCALE=3 vspipe "$SCRIPTDIR/extract.vpy" - | env RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 788x576 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" -define png:color-type=2 "$OUTDIR/TestCardFElec.png"
