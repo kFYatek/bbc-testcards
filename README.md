@@ -103,11 +103,20 @@ Legal disclaimer
 
 BBC test card images may be copyrighted, and some of their features, like the
 BBC logos and the Carole Hersee photograph, definitely are. The copyright owners
-(on the famous GIF version of Test Card F listed as: © BBC, ITC & BREMA 1967)
 seem to be OK with people who play with the test cards for
 non-commercial/hobbyist purposes, or reproduce them with appropriate context.
 But I am not a lawyer, and don't take any responsibility for possible
 consequences of unauthorized use.
+
+Said copyright owners were listed on the famous GIF version of Test Card F as:
+© BBC, ITC & BREMA 1967. [BBC](https://bbc.com/) is still active today. ITC, the
+Independent Television Commission, was a commercial broadcasting regulatory body
+replaced by [Ofcom](https://www.ofcom.org.uk/) in 2003. BREMA, the British Radio
+Equipment Manufacturers' Association, through mergers with the Federation of the
+Electronics Industry in 2001 and the Computing Software and Services Association
+in 2002, formed Intellect, which then relaunched as
+[techUK](https://www.techuk.org/) in 2013. Thus, the current copyright owners
+are most likely BBC, Ofcom and techUK.
 
 All the code, text and information created by me as part of this repository, is
 free to use however you like, with or without attribution. Treat it as
