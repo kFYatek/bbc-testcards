@@ -85,8 +85,21 @@ magick png:"$TMPIMAGE" -crop 720x14+0+6 -filter Box -resize 720x1\! -filter Box 
     +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" \
     -define png:color-type=2 "$OUTDIR/TestCardFOpt.png"
 
+# Recreation of the electronic Test Card F
+env CARD=9 SCALE=3 vspipe "$SCRIPTDIR/extract.vpy" - \
+| env RAW16OUT=1 "$SCRIPTDIR/convert.py" \
+| magick -size 788x576 -depth 16 rgb:- -define png:color-type=2 \
+    "$SCRIPTDIR/../TestCardFElec_reconstruction.png" -composite png:- \
+| magick png:- \
+    +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" \
+    -define png:color-type=2 "$OUTDIR/TestCardFElec-788.png"
+magick "$OUTDIR/TestCardFElec-788.png" -bordercolor '#100010001000' -border 118x0 rgb:- \
+| "$SCRIPTDIR/fftresize.py" raw16:1024x576 936 576 \
+| magick -size 936x576 -depth 16 rgb:- \
+    -crop 720x576+108+0 +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" \
+    -define png:color-type=2 "$OUTDIR/TestCardFElec.png"
+
 # Electronic SD test cards
-env CARD=9 SCALE=3 vspipe "$SCRIPTDIR/extract.vpy" - | env RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 788x576 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" -define png:color-type=2 "$OUTDIR/TestCardFElec.png"
 env CARD=10 vspipe "$SCRIPTDIR/extract.vpy" - | env RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 720x576 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" -define png:color-type=2 "$OUTDIR/TestCardJ.png"
 env CARD=11 vspipe "$SCRIPTDIR/extract.vpy" - | env RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 720x576 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" -define png:color-type=2 "$OUTDIR/TestCardFWide.png"
 env CARD=12 vspipe "$SCRIPTDIR/extract.vpy" - | env RAW16OUT=1 "$SCRIPTDIR/convert.py" | magick -size 720x576 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" -define png:color-type=2 "$OUTDIR/TestCardW.png"

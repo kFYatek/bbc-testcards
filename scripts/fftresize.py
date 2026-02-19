@@ -13,14 +13,20 @@ target_height = int(sys.argv[3])
 if not 'get_flattened_data' in PIL.Image.Image.__dict__.keys():
     PIL.Image.Image.get_flattened_data = PIL.Image.Image.getdata
 
-im = PIL.Image.open(sys.argv[1])
-if im.mode == 'P':
-    im = im.convert(im.palette.mode)
+if sys.argv[1].startswith('raw16:'):
+    width, height = (int(val) for val in sys.argv[1][6:].split('x'))
+    with open('/dev/stdin', 'rb') as f:
+        rawdata = f.read()
+    data = numpy.ndarray((height, width, 3), dtype=numpy.uint16, buffer=rawdata)
+else:
+    im = PIL.Image.open(sys.argv[1])
+    if im.mode == 'P':
+        im = im.convert(im.palette.mode)
 
-data = numpy.array(im.get_flattened_data())
-data = data.reshape((im.height, im.width, len(im.getbands())))
-if ';16' not in im.mode:
-    data *= 256
+    data = numpy.array(im.get_flattened_data())
+    data = data.reshape((im.height, im.width, len(im.getbands())))
+    if ';16' not in im.mode:
+        data *= 256
 
 if target_width != im.width:
     data = common.resample_with_mirrors(data, target_width, axis=1)
