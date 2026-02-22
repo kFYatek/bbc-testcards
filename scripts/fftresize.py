@@ -28,9 +28,9 @@ else:
     if ';16' not in im.mode:
         data *= 256
 
-if target_width != im.width:
+if target_width != data.shape[1]:
     data = common.resample_with_mirrors(data, target_width, axis=1)
-if target_height != im.height:
+if target_height != data.shape[0]:
     data = common.resample_with_mirrors(data, target_height, axis=0)
 
 outbuf = bytearray(2 * numpy.prod(data.shape))

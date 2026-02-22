@@ -6,6 +6,9 @@ SCALE=
 TMPFILES=
 export SCALE
 
+# Work around some race conditions in libplacebo on macOS
+export MVK_CONFIG_MAX_ACTIVE_METAL_COMMAND_BUFFERS_PER_QUEUE=1
+
 remove_tmpfiles() {
     rm -f $TMPFILES
 }
