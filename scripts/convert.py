@@ -5,37 +5,11 @@ import os
 
 import PIL.Image
 import numpy
-import scipy.signal
 
 import common
 
 if not 'get_flattened_data' in PIL.Image.Image.__dict__.keys():
     PIL.Image.Image.get_flattened_data = PIL.Image.Image.getdata
-
-
-def apply_shift(data: numpy.array, shift: float, axis: int = -1):
-    if axis < 0:
-        axis = len(data.shape) + axis
-    intshift = int(shift)
-    if intshift != 0:
-        data = numpy.roll(data, -intshift, axis=axis)
-        data = numpy.swapaxes(data, 0, axis)
-        if intshift > 0:
-            data[-intshift:] = data[-intshift - 1]
-        else:
-            data[0:-intshift] = data[-intshift]
-        data = numpy.swapaxes(data, 0, axis)
-    shift = shift - intshift
-    if shift != 0:
-        data = numpy.swapaxes(data, len(data.shape) - 1, axis)
-        data = numpy.pad(data, [(0, 0)] * (len(data.shape) - 1) + [(1, 1)], mode='edge')
-        fft = scipy.fft.rfft(data, axis=-1)
-        fft *= numpy.exp(
-            numpy.array(range(fft.shape[-1])) * (2.0j * shift * numpy.pi / data.shape[-1]))
-        data = scipy.fft.irfft(fft, n=data.shape[-1], axis=-1)
-        data = numpy.delete(data, [0, -1], axis=-1)
-        data = numpy.swapaxes(data, len(data.shape) - 1, axis)
-    return data
 
 
 def _main():
@@ -145,8 +119,8 @@ def _main():
         src_left += yuvdata.shape[2] / (2 * dimensions.scale_w) - 0.5
         src_top += yuvdata.shape[1] / (2 * dimensions.scale_h) - 0.5
 
-    yuvdata = apply_shift(yuvdata, src_left, axis=2)
-    yuvdata = apply_shift(yuvdata, src_top, axis=1)
+    yuvdata = common.apply_shift(yuvdata, src_left, axis=2)
+    yuvdata = common.apply_shift(yuvdata, src_top, axis=1)
 
     if dimensions is not None:
         yuvdata = common.resample_with_mirrors(yuvdata, dimensions.scale_w, axis=2)
