@@ -12,90 +12,6 @@ import common
 if not 'get_flattened_data' in PIL.Image.Image.__dict__.keys():
     PIL.Image.Image.get_flattened_data = PIL.Image.Image.getdata
 
-try:
-    COLORSPACE = common.ColorSpace(int(os.environ.get('COLORSPACE')))
-except Exception:
-    COLORSPACE = common.ColorSpace.BT601
-LIMITED = bool(int(os.environ.get('LIMITED') or '0'))
-RAW16IN = bool(int(os.environ.get('RAW16IN') or '0'))
-RAW16OUT = bool(int(os.environ.get('RAW16OUT') or '0'))
-FILEIN = os.environ.get('FILEIN')
-PLOT = int(os.environ.get('PLOT') or '0')
-PLOTSCALE = float(os.environ.get('PLOTSCALE') or '1')
-
-try:
-    CARD = common.CARDS[int(os.environ['CARD'])]
-except Exception:
-    CARD = None
-
-try:
-    SCALE = common.ScalingMode(int(os.environ.get('SCALE')))
-except Exception:
-    SCALE = common.ScalingMode.NONE
-
-if FILEIN is not None:
-    image = PIL.Image.open(FILEIN)
-    width = image.width
-    height = image.height
-    if image.mode.startswith('I;16'):
-        rgbdata = numpy.array(image.get_flattened_data())
-        rgbdata = rgbdata.reshape((1, height, width))
-        rgbdata = (rgbdata - 4096.0) / 56064.0
-        rgbdata = rgbdata.repeat(3, axis=0)
-    else:
-        image = image.convert('RGB')
-        rgbdata = numpy.array(image.get_flattened_data())
-        rgbdata = rgbdata.reshape((height, width, 3))
-        rgbdata = (rgbdata - 16.0) / 219.0
-        rgbdata = rgbdata.transpose((2, 0, 1))
-
-    if COLORSPACE is common.ColorSpace.GRAYSCALE:
-        convmatrix = numpy.array([[0.299, 0.587, 0.114], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
-    if COLORSPACE is common.ColorSpace.BT601:
-        convmatrix = numpy.array(
-            [[0.299, 0.587, 0.114], [-0.16873589164785552, -0.3312641083521445, 0.5],
-             [0.5, -0.4186875891583452, -0.08131241084165478]])
-    elif COLORSPACE is common.ColorSpace.BT709:
-        convmatrix = numpy.array(
-            [[0.2126, 0.7152, 0.0722], [-0.11457210605733995, -0.3854278939426601, 0.5],
-             [0.5, -0.4541529083058166, -0.04584709169418339]])
-    else:
-        convmatrix = None
-
-    if convmatrix is not None:
-        yuvdata = numpy.matvec(convmatrix, rgbdata, axes=[(0, 1), (0), (0)])
-    else:
-        yuvdata = rgbdata
-else:
-    with open('/dev/stdin', 'rb') as f:
-        data = f.read()
-
-    multiplier = 6 if RAW16IN else 12
-    if len(data) == multiplier * 1920 * 1080:
-        width = 1920
-        height = 1080
-    elif len(data) % (multiplier * 576) == 0 and len(data) // (multiplier * 576) >= 720:
-        width = len(data) // (multiplier * 576)
-        height = 576
-    elif len(data) % (multiplier * 378) == 0 and len(data) // (multiplier * 378) >= 486:
-        width = len(data) // (multiplier * 378)
-        height = 378
-
-    if RAW16IN:
-        yuvdata_raw = numpy.ndarray((height, width, 3), dtype=numpy.uint16, buffer=bytearray(data))
-    else:
-        yuvdata_raw = numpy.ndarray((3, height, width), dtype=numpy.float32, buffer=bytearray(data))
-    yuvdata = numpy.zeros(yuvdata_raw.shape)
-    yuvdata[:, :, :] = yuvdata_raw
-
-    if RAW16IN:
-        yuvdata = numpy.transpose(yuvdata, (2, 0, 1))
-        yuvdata /= 256.0
-        yuvdata[0] -= 16.0
-        yuvdata[0] /= 219.0
-        yuvdata[1:] -= 128.0
-        yuvdata[1:] /= 224.0
-
 
 def apply_shift(data: numpy.array, shift: float, axis: int = -1):
     if axis < 0:
@@ -122,180 +38,270 @@ def apply_shift(data: numpy.array, shift: float, axis: int = -1):
     return data
 
 
-dimensions = None
-src_left = 0.0
-src_top = 0.0
-if CARD is not None:
-    dimensions = common.get_scaling_dimensions(SCALE, CARD.mode)
-    if width >= common.get_scaling_dimensions(common.ScalingMode.VERTICAL, CARD.mode).crop_w:
-        src_left = CARD.src_left
-    if height == 1080:
-        src_top = CARD.src_top
+def _main():
+    try:
+        COLORSPACE = common.ColorSpace(int(os.environ.get('COLORSPACE')))
+    except Exception:
+        COLORSPACE = common.ColorSpace.BT601
+    LIMITED = bool(int(os.environ.get('LIMITED') or '0'))
+    RAW16IN = bool(int(os.environ.get('RAW16IN') or '0'))
+    RAW16OUT = bool(int(os.environ.get('RAW16OUT') or '0'))
+    FILEIN = os.environ.get('FILEIN')
+    PLOT = int(os.environ.get('PLOT') or '0')
+    PLOTSCALE = float(os.environ.get('PLOTSCALE') or '1')
 
-if dimensions is not None:
-    while dimensions.precrop_w > yuvdata.shape[2]:
-        reversed = numpy.flip(yuvdata, axis=2)
-        yuvdata = numpy.concatenate([reversed, yuvdata, reversed], axis=2)
-    if dimensions.precrop_w != yuvdata.shape[2]:
-        yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.precrop_w) // 2:]
-        yuvdata = yuvdata[:, :, :dimensions.precrop_w]
-    src_left += yuvdata.shape[2] / (2 * dimensions.scale_w) - 0.5
-    src_top += yuvdata.shape[1] / (2 * dimensions.scale_h) - 0.5
+    try:
+        CARD = common.CARDS[int(os.environ['CARD'])]
+    except Exception:
+        CARD = None
 
-yuvdata = apply_shift(yuvdata, src_left, axis=2)
-yuvdata = apply_shift(yuvdata, src_top, axis=1)
+    try:
+        SCALE = common.ScalingMode(int(os.environ.get('SCALE')))
+    except Exception:
+        SCALE = common.ScalingMode.NONE
 
-if dimensions is not None:
-    yuvdata = common.resample_with_mirrors(yuvdata, dimensions.scale_w, axis=2)
-    yuvdata = common.resample_with_mirrors(yuvdata, dimensions.scale_h, axis=1)
-    if dimensions.crop_w != dimensions.scale_w:
-        yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.crop_w) // 2:]
-        yuvdata = yuvdata[:, :, :dimensions.crop_w]
-
-if FILEIN is None and COLORSPACE is common.ColorSpace.GRAYSCALE:
-    convmatrix = numpy.array([[1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
-elif FILEIN is None and COLORSPACE is common.ColorSpace.BT601:
-    convmatrix = numpy.array(
-        [[1.0, 0.0, 1.402], [1.0, -0.34413628620102216, -0.7141362862010221], [1.0, 1.772, 0.0]])
-elif FILEIN is None and COLORSPACE is common.ColorSpace.BT709:
-    convmatrix = numpy.array(
-        [[1.0, 0.0, 1.5748], [1.0, -0.18732427293064877, -0.4681242729306488], [1.0, 1.8556, 0.0]])
-else:
-    convmatrix = None
-
-if convmatrix is not None:
-    outdata = numpy.matvec(convmatrix, yuvdata, axes=[(0, 1), (0), (0)])
-else:
-    outdata = yuvdata
-
-if PLOT > 0:
-    import matplotlib.pyplot
-    import matplotlib.widgets
-
-    if dimensions is None:
-        if CARD is not None:
-            orig_resolution = CARD.mode
-        elif height <= 405:
-            orig_resolution = common.OriginalResolution.SYSA43
-        elif height <= 625:
-            orig_resolution = common.OriginalResolution.PAL43
-        elif height == 1080:
-            orig_resolution = common.OriginalResolution.HD1080
+    if FILEIN is not None:
+        image = PIL.Image.open(FILEIN)
+        width = image.width
+        height = image.height
+        if image.mode.startswith('I;16'):
+            rgbdata = numpy.array(image.get_flattened_data())
+            rgbdata = rgbdata.reshape((1, height, width))
+            rgbdata = (rgbdata - 4096.0) / 56064.0
+            rgbdata = rgbdata.repeat(3, axis=0)
         else:
-            orig_resolution = None
+            image = image.convert('RGB')
+            rgbdata = numpy.array(image.get_flattened_data())
+            rgbdata = rgbdata.reshape((height, width, 3))
+            rgbdata = (rgbdata - 16.0) / 219.0
+            rgbdata = rgbdata.transpose((2, 0, 1))
 
-        if orig_resolution is not None:
-            for scaling_mode in common.ScalingMode:
-                if scaling_mode is not common.ScalingMode.NONE:
-                    candidate = common.get_scaling_dimensions(scaling_mode, orig_resolution)
-                    if candidate.crop_w == outdata.shape[2]:
-                        dimensions = candidate
-                        break
+        if COLORSPACE is common.ColorSpace.GRAYSCALE:
+            convmatrix = numpy.array([[0.299, 0.587, 0.114], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+        if COLORSPACE is common.ColorSpace.BT601:
+            convmatrix = numpy.array(
+                [[0.299, 0.587, 0.114], [-0.16873589164785552, -0.3312641083521445, 0.5],
+                 [0.5, -0.4186875891583452, -0.08131241084165478]])
+        elif COLORSPACE is common.ColorSpace.BT709:
+            convmatrix = numpy.array(
+                [[0.2126, 0.7152, 0.0722], [-0.11457210605733995, -0.3854278939426601, 0.5],
+                 [0.5, -0.4541529083058166, -0.04584709169418339]])
+        else:
+            convmatrix = None
+
+        if convmatrix is not None:
+            yuvdata = numpy.matvec(convmatrix, rgbdata, axes=[(0, 1), (0), (0)])
+        else:
+            yuvdata = rgbdata
+    else:
+        with open('/dev/stdin', 'rb') as f:
+            data = f.read()
+
+        multiplier = 6 if RAW16IN else 12
+        if len(data) == multiplier * 1920 * 1080:
+            width = 1920
+            height = 1080
+        elif len(data) % (multiplier * 576) == 0 and len(data) // (multiplier * 576) >= 720:
+            width = len(data) // (multiplier * 576)
+            height = 576
+        elif len(data) % (multiplier * 378) == 0 and len(data) // (multiplier * 378) >= 486:
+            width = len(data) // (multiplier * 378)
+            height = 378
+
+        if RAW16IN:
+            yuvdata_raw = numpy.ndarray((height, width, 3), dtype=numpy.uint16,
+                                        buffer=bytearray(data))
+        else:
+            yuvdata_raw = numpy.ndarray((3, height, width), dtype=numpy.float32,
+                                        buffer=bytearray(data))
+        yuvdata = numpy.zeros(yuvdata_raw.shape)
+        yuvdata[:, :, :] = yuvdata_raw
+
+        if RAW16IN:
+            yuvdata = numpy.transpose(yuvdata, (2, 0, 1))
+            yuvdata /= 256.0
+            yuvdata[0] -= 16.0
+            yuvdata[0] /= 219.0
+            yuvdata[1:] -= 128.0
+            yuvdata[1:] /= 224.0
+
+    dimensions = None
+    src_left = 0.0
+    src_top = 0.0
+    if CARD is not None:
+        dimensions = common.get_scaling_dimensions(SCALE, CARD.mode)
+        if width >= common.get_scaling_dimensions(common.ScalingMode.VERTICAL, CARD.mode).crop_w:
+            src_left = CARD.src_left
+        if height == 1080:
+            src_top = CARD.src_top
 
     if dimensions is not None:
-        sample_rate_mhz = dimensions.sample_rate_mhz
+        while dimensions.precrop_w > yuvdata.shape[2]:
+            reversed = numpy.flip(yuvdata, axis=2)
+            yuvdata = numpy.concatenate([reversed, yuvdata, reversed], axis=2)
+        if dimensions.precrop_w != yuvdata.shape[2]:
+            yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.precrop_w) // 2:]
+            yuvdata = yuvdata[:, :, :dimensions.precrop_w]
+        src_left += yuvdata.shape[2] / (2 * dimensions.scale_w) - 0.5
+        src_top += yuvdata.shape[1] / (2 * dimensions.scale_h) - 0.5
+
+    yuvdata = apply_shift(yuvdata, src_left, axis=2)
+    yuvdata = apply_shift(yuvdata, src_top, axis=1)
+
+    if dimensions is not None:
+        yuvdata = common.resample_with_mirrors(yuvdata, dimensions.scale_w, axis=2)
+        yuvdata = common.resample_with_mirrors(yuvdata, dimensions.scale_h, axis=1)
+        if dimensions.crop_w != dimensions.scale_w:
+            yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.crop_w) // 2:]
+            yuvdata = yuvdata[:, :, :dimensions.crop_w]
+
+    if FILEIN is None and COLORSPACE is common.ColorSpace.GRAYSCALE:
+        convmatrix = numpy.array([[1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
+    elif FILEIN is None and COLORSPACE is common.ColorSpace.BT601:
+        convmatrix = numpy.array(
+            [[1.0, 0.0, 1.402], [1.0, -0.34413628620102216, -0.7141362862010221],
+             [1.0, 1.772, 0.0]])
+    elif FILEIN is None and COLORSPACE is common.ColorSpace.BT709:
+        convmatrix = numpy.array(
+            [[1.0, 0.0, 1.5748], [1.0, -0.18732427293064877, -0.4681242729306488],
+             [1.0, 1.8556, 0.0]])
     else:
-        sample_rate_mhz = None
+        convmatrix = None
 
-    UPSAMPLE = 32
-    outdata = common.resample_with_mirrors(outdata, outdata.shape[2] * UPSAMPLE, axis=2)
-    xdata = numpy.array(range(outdata.shape[2])) / UPSAMPLE
-
-    fig = matplotlib.pyplot.figure()
-    subplot = fig.add_subplot()
-    subplot.set_autoscalex_on(True)
-    subplot.set_autoscaley_on(False)
-    if PLOT == 1 or convmatrix is not None or (
-            FILEIN is not None and COLORSPACE is common.ColorSpace.YUV):
-        subplot.set_ybound(-0.1 * PLOTSCALE, 1.1 * PLOTSCALE)
+    if convmatrix is not None:
+        outdata = numpy.matvec(convmatrix, yuvdata, axes=[(0, 1), (0), (0)])
     else:
-        subplot.set_ybound(-0.6 * PLOTSCALE, 0.6 * PLOTSCALE)
-    matplotlib.pyplot.subplots_adjust(bottom=0.25)
+        outdata = yuvdata
 
-    lineno = 0
-    mpline, = subplot.plot(xdata, outdata[PLOT - 1, lineno] * PLOTSCALE)
+    if PLOT > 0:
+        import matplotlib.pyplot
+        import matplotlib.widgets
 
-    slider_frame = matplotlib.pyplot.axes([0.1, 0.1, 0.8, 0.03])
-    slider = matplotlib.widgets.Slider(slider_frame, 'Line', 0, outdata.shape[1] - 1, valinit=0,
-                                       valfmt='%d')
+        if dimensions is None:
+            if CARD is not None:
+                orig_resolution = CARD.mode
+            elif height <= 405:
+                orig_resolution = common.OriginalResolution.SYSA43
+            elif height <= 625:
+                orig_resolution = common.OriginalResolution.PAL43
+            elif height == 1080:
+                orig_resolution = common.OriginalResolution.HD1080
+            else:
+                orig_resolution = None
 
-    lineno = 0
-    freq = None
+            if orig_resolution is not None:
+                for scaling_mode in common.ScalingMode:
+                    if scaling_mode is not common.ScalingMode.NONE:
+                        candidate = common.get_scaling_dimensions(scaling_mode, orig_resolution)
+                        if candidate.crop_w == outdata.shape[2]:
+                            dimensions = candidate
+                            break
 
-
-    def update_title():
-        title = f'Line {lineno}'
-        if freq is not None:
-            freq_text = f'{freq:.6g} * fS'
-            if sample_rate_mhz is not None:
-                freq_text = f'{freq * sample_rate_mhz:.6g} MHz ({freq_text})'
-            title += ' || Dominant frequency: ' + freq_text
-        subplot.set_title(title)
-
-
-    def measure_frequency(axes):
-        global freq
-        left, right = subplot.get_xlim()
-        left = max(int(math.floor(left * UPSAMPLE)), 0)
-        right = min(int(math.ceil(right * UPSAMPLE)), outdata.shape[2] - 1)
-        if left == right:
-            freq = None
+        if dimensions is not None:
+            sample_rate_mhz = dimensions.sample_rate_mhz
         else:
-            input = outdata[PLOT - 1, lineno][left:right + 1]
-            fft = numpy.fft.rfft(input - numpy.mean(input))
-            domf = numpy.argmax(numpy.abs(fft))
-            if domf > 0 and domf < len(fft) - 1:
-                domf_pre = numpy.abs(fft[domf - 1])
-                domf_peak = numpy.abs(fft[domf])
-                domf_post = numpy.abs(fft[domf + 1])
-                # Parabolic interpolation
-                if domf_pre != 0 and domf_peak != 0 and domf_post != 0:
-                    domf = domf + numpy.log(domf_pre / domf_post) / numpy.log(
-                        domf_pre * domf_pre * domf_post * domf_post / (
-                                domf_peak * domf_peak * domf_peak * domf_peak))
-            freq = domf * UPSAMPLE / len(input)
-        update_title()
+            sample_rate_mhz = None
 
+        UPSAMPLE = 32
+        outdata = common.resample_with_mirrors(outdata, outdata.shape[2] * UPSAMPLE, axis=2)
+        xdata = numpy.array(range(outdata.shape[2])) / UPSAMPLE
 
-    def slider_update(val):
-        global lineno
-        lineno = int(numpy.floor(slider.val))
-        mpline.set_ydata(outdata[PLOT - 1, lineno] * PLOTSCALE)
-        subplot.relim()
-        matplotlib.pyplot.draw()
-        measure_frequency(None)
-
-
-    subplot.callbacks.connect('xlim_changed', measure_frequency)
-    slider.on_changed(slider_update)
-    slider_update(0)
-    matplotlib.pyplot.show()
-else:
-    if LIMITED or RAW16OUT:
-        if FILEIN is not None or convmatrix is not None:
-            outdata *= 219.0
-            outdata += 16.0
+        fig = matplotlib.pyplot.figure()
+        subplot = fig.add_subplot()
+        subplot.set_autoscalex_on(True)
+        subplot.set_autoscaley_on(False)
+        if PLOT == 1 or convmatrix is not None or (
+                FILEIN is not None and COLORSPACE is common.ColorSpace.YUV):
+            subplot.set_ybound(-0.1 * PLOTSCALE, 1.1 * PLOTSCALE)
         else:
-            outdata[0] *= 219.0
-            outdata[0] += 16.0
-            outdata[1:] *= 224.0
-            outdata[1:] += 128.0
-        if RAW16OUT:
-            outdata *= 256.0
+            subplot.set_ybound(-0.6 * PLOTSCALE, 0.6 * PLOTSCALE)
+        matplotlib.pyplot.subplots_adjust(bottom=0.25)
+
+        lineno = 0
+        mpline, = subplot.plot(xdata, outdata[PLOT - 1, lineno] * PLOTSCALE)
+
+        slider_frame = matplotlib.pyplot.axes([0.1, 0.1, 0.8, 0.03])
+        slider = matplotlib.widgets.Slider(slider_frame, 'Line', 0, outdata.shape[1] - 1, valinit=0,
+                                           valfmt='%d')
+
+        lineno = 0
+        freq = None
+
+        def update_title():
+            title = f'Line {lineno}'
+            if freq is not None:
+                freq_text = f'{freq:.6g} * fS'
+                if sample_rate_mhz is not None:
+                    freq_text = f'{freq * sample_rate_mhz:.6g} MHz ({freq_text})'
+                title += ' || Dominant frequency: ' + freq_text
+            subplot.set_title(title)
+
+        def measure_frequency(axes):
+            global freq
+            left, right = subplot.get_xlim()
+            left = max(int(math.floor(left * UPSAMPLE)), 0)
+            right = min(int(math.ceil(right * UPSAMPLE)), outdata.shape[2] - 1)
+            if left == right:
+                freq = None
+            else:
+                input = outdata[PLOT - 1, lineno][left:right + 1]
+                fft = numpy.fft.rfft(input - numpy.mean(input))
+                domf = numpy.argmax(numpy.abs(fft))
+                if domf > 0 and domf < len(fft) - 1:
+                    domf_pre = numpy.abs(fft[domf - 1])
+                    domf_peak = numpy.abs(fft[domf])
+                    domf_post = numpy.abs(fft[domf + 1])
+                    # Parabolic interpolation
+                    if domf_pre != 0 and domf_peak != 0 and domf_post != 0:
+                        domf = domf + numpy.log(domf_pre / domf_post) / numpy.log(
+                            domf_pre * domf_pre * domf_post * domf_post / (
+                                    domf_peak * domf_peak * domf_peak * domf_peak))
+                freq = domf * UPSAMPLE / len(input)
+            update_title()
+
+        def slider_update(val):
+            global lineno
+            lineno = int(numpy.floor(slider.val))
+            mpline.set_ydata(outdata[PLOT - 1, lineno] * PLOTSCALE)
+            subplot.relim()
+            matplotlib.pyplot.draw()
+            measure_frequency(None)
+
+        subplot.callbacks.connect('xlim_changed', measure_frequency)
+        slider.on_changed(slider_update)
+        slider_update(0)
+        matplotlib.pyplot.show()
     else:
-        if FILEIN is None and convmatrix is None:
-            outdata[1:] += 0.5
-        outdata *= 255.0
-
-    outdata = numpy.transpose(outdata, (1, 2, 0))
-    outbuf = bytearray(outdata.size * (2 if RAW16OUT else 1))
-    output = numpy.ndarray(outdata.shape, dtype='uint16' if RAW16OUT else 'uint8', buffer=outbuf)
-    output[:, :, :] = numpy.round(
-        numpy.minimum(numpy.maximum(outdata, 0.0), 65535.0 if RAW16OUT else 255.0))
-
-    with open('/dev/stdout', 'wb') as f:
-        if RAW16OUT:
-            f.write(outbuf)
+        if LIMITED or RAW16OUT:
+            if FILEIN is not None or convmatrix is not None:
+                outdata *= 219.0
+                outdata += 16.0
+            else:
+                outdata[0] *= 219.0
+                outdata[0] += 16.0
+                outdata[1:] *= 224.0
+                outdata[1:] += 128.0
+            if RAW16OUT:
+                outdata *= 256.0
         else:
-            PIL.Image.frombuffer('RGB', (output.shape[1], output.shape[0]), outbuf).save(f,
-                                                                                         format='PNG')
+            if FILEIN is None and convmatrix is None:
+                outdata[1:] += 0.5
+            outdata *= 255.0
+
+        outdata = numpy.transpose(outdata, (1, 2, 0))
+        outbuf = bytearray(outdata.size * (2 if RAW16OUT else 1))
+        output = numpy.ndarray(outdata.shape, dtype='uint16' if RAW16OUT else 'uint8',
+                               buffer=outbuf)
+        output[:, :, :] = numpy.round(
+            numpy.minimum(numpy.maximum(outdata, 0.0), 65535.0 if RAW16OUT else 255.0))
+
+        with open('/dev/stdout', 'wb') as f:
+            if RAW16OUT:
+                f.write(outbuf)
+            else:
+                PIL.Image.frombuffer('RGB', (output.shape[1], output.shape[0]), outbuf).save(f,
+                                                                                             format='PNG')
+
+
+if __name__ == "__main__":
+    _main()

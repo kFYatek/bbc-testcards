@@ -8,22 +8,28 @@ import numpy
 if not 'get_flattened_data' in PIL.Image.Image.__dict__.keys():
     PIL.Image.Image.get_flattened_data = PIL.Image.Image.getdata
 
-tsimg = PIL.Image.open('TestCardWCalib.png')
 
-tsdata = numpy.array(tsimg.get_flattened_data()).reshape((tsimg.height, tsimg.width, 3))
+def _main():
+    tsimg = PIL.Image.open('TestCardWCalib.png')
 
-lut = collections.defaultdict(list)
+    tsdata = numpy.array(tsimg.get_flattened_data()).reshape((tsimg.height, tsimg.width, 3))
 
-for x in range(0, 895):
-    inp = tsdata[1067, x, 1]
-    outp = (208021.0 - 217.0 * x) / 890.0
-    lut[int(inp)].append(outp)
+    lut = collections.defaultdict(list)
 
-result = []
-for inp, outp in sorted(lut.items(), key=lambda x: x[0]):
-    outval = float(numpy.average(outp))
-    if outval == int(outval):
-        outval = int(outval)
-    result.append((inp, outval))
+    for x in range(0, 895):
+        inp = tsdata[1067, x, 1]
+        outp = (208021.0 - 217.0 * x) / 890.0
+        lut[int(inp)].append(outp)
 
-print(result)
+    result = []
+    for inp, outp in sorted(lut.items(), key=lambda x: x[0]):
+        outval = float(numpy.average(outp))
+        if outval == int(outval):
+            outval = int(outval)
+        result.append((inp, outval))
+
+    print(result)
+
+
+if __name__ == '__main__':
+    _main()
