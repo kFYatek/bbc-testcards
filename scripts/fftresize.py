@@ -31,9 +31,9 @@ def _main():
             data *= 256
 
     if target_width != data.shape[1]:
-        data = common.resample_with_mirrors(data, target_width, axis=1)
+        data = common.resample_with_shift(data, target_width, axis=1)
     if target_height != data.shape[0]:
-        data = common.resample_with_mirrors(data, target_height, axis=0)
+        data = common.resample_with_shift(data, target_height, axis=0)
 
     outbuf = bytearray(2 * numpy.prod(data.shape))
     output = numpy.ndarray(data.shape, dtype=numpy.uint16, buffer=outbuf)

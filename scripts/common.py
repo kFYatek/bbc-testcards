@@ -158,6 +158,19 @@ def apply_shift(data: numpy.array, shift: float, axis: int = -1):
     return data
 
 
+def resample_with_shift(data: numpy.array, new_size: int, axis: int = -1):
+    if axis < 0:
+        axis = len(data.shape) + axis
+    old_size = data.shape[axis]
+    if new_size < old_size:
+        data = apply_shift(data, old_size / (2.0 * new_size) - 0.5, axis)
+        data = resample_with_mirrors(data, new_size, axis)
+    elif new_size > old_size:
+        data = resample_with_mirrors(data, new_size, axis)
+        data = apply_shift(data, 0.5 - new_size / (2.0 * old_size), axis)
+    return data
+
+
 CARDS = [TestCardDefinition('Test Card X', 600, OriginalResolution.HD1080),
          TestCardDefinition('Television Eye', 1557, OriginalResolution.HD1080),
          TestCardDefinition('Tuning Signal', 2030, OriginalResolution.SYSA54, 0.27, -1.867),
