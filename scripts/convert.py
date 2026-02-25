@@ -12,13 +12,33 @@ if not 'get_flattened_data' in PIL.Image.Image.__dict__.keys():
     PIL.Image.Image.get_flattened_data = PIL.Image.Image.getdata
 
 
+def convertfromrgb(rgbdata: numpy.ndarray, colorspace: common.ColorSpace) -> numpy.ndarray:
+    if colorspace is common.ColorSpace.GRAYSCALE:
+        convmatrix = numpy.array([[0.299, 0.587, 0.114], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+    elif colorspace is common.ColorSpace.BT601:
+        convmatrix = numpy.array(
+            [[0.299, 0.587, 0.114], [-0.16873589164785552, -0.3312641083521445, 0.5],
+             [0.5, -0.4186875891583452, -0.08131241084165478]])
+    elif colorspace is common.ColorSpace.BT709:
+        convmatrix = numpy.array(
+            [[0.2126, 0.7152, 0.0722], [-0.11457210605733995, -0.3854278939426601, 0.5],
+             [0.5, -0.4541529083058166, -0.04584709169418339]])
+    else:
+        convmatrix = None
+
+    if convmatrix is not None:
+        return numpy.matvec(convmatrix, rgbdata, axes=[(0, 1), (0), (0)])
+    else:
+        return rgbdata
+
+
 def _main():
     try:
         COLORSPACE = common.ColorSpace(int(os.environ.get('COLORSPACE')))
     except Exception:
         COLORSPACE = common.ColorSpace.BT601
     LIMITED = bool(int(os.environ.get('LIMITED') or '0'))
-    RAW16IN = bool(int(os.environ.get('RAW16IN') or '0'))
+    RAW16IN = int(os.environ.get('RAW16IN') or '0')
     RAW16OUT = bool(int(os.environ.get('RAW16OUT') or '0'))
     FILEIN = os.environ.get('FILEIN')
     PLOT = int(os.environ.get('PLOT') or '0')
@@ -49,29 +69,13 @@ def _main():
             rgbdata = rgbdata.reshape((height, width, 3))
             rgbdata = (rgbdata - 16.0) / 219.0
             rgbdata = rgbdata.transpose((2, 0, 1))
-
-        if COLORSPACE is common.ColorSpace.GRAYSCALE:
-            convmatrix = numpy.array([[0.299, 0.587, 0.114], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
-        if COLORSPACE is common.ColorSpace.BT601:
-            convmatrix = numpy.array(
-                [[0.299, 0.587, 0.114], [-0.16873589164785552, -0.3312641083521445, 0.5],
-                 [0.5, -0.4186875891583452, -0.08131241084165478]])
-        elif COLORSPACE is common.ColorSpace.BT709:
-            convmatrix = numpy.array(
-                [[0.2126, 0.7152, 0.0722], [-0.11457210605733995, -0.3854278939426601, 0.5],
-                 [0.5, -0.4541529083058166, -0.04584709169418339]])
-        else:
-            convmatrix = None
-
-        if convmatrix is not None:
-            yuvdata = numpy.matvec(convmatrix, rgbdata, axes=[(0, 1), (0), (0)])
-        else:
-            yuvdata = rgbdata
+        yuvdata = convertfromrgb(rgbdata, COLORSPACE)
+        COLORSPACE = common.ColorSpace.YUV
     else:
         with open('/dev/stdin', 'rb') as f:
             data = f.read()
 
-        multiplier = 6 if RAW16IN else 12
+        multiplier = 6 if RAW16IN > 0 else 12
         if len(data) == multiplier * 1920 * 1080:
             width = 1920
             height = 1080
@@ -82,7 +86,7 @@ def _main():
             width = len(data) // (multiplier * 378)
             height = 378
 
-        if RAW16IN:
+        if RAW16IN > 0:
             yuvdata_raw = numpy.ndarray((height, width, 3), dtype=numpy.uint16,
                                         buffer=bytearray(data))
         else:
@@ -91,13 +95,18 @@ def _main():
         yuvdata = numpy.zeros(yuvdata_raw.shape)
         yuvdata[:, :, :] = yuvdata_raw
 
-        if RAW16IN:
+        if RAW16IN == 1:
             yuvdata = numpy.transpose(yuvdata, (2, 0, 1))
             yuvdata /= 256.0
             yuvdata[0] -= 16.0
             yuvdata[0] /= 219.0
             yuvdata[1:] -= 128.0
             yuvdata[1:] /= 224.0
+        elif RAW16IN == 2:
+            rgbdata = numpy.transpose(yuvdata, (2, 0, 1))
+            rgbdata = (rgbdata - 4096.0) / (219.0 * 256.0)
+            yuvdata = convertfromrgb(rgbdata, COLORSPACE)
+            COLORSPACE = common.ColorSpace.YUV
 
     dimensions = None
     src_left = 0.0
@@ -129,13 +138,13 @@ def _main():
             yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.crop_w) // 2:]
             yuvdata = yuvdata[:, :, :dimensions.crop_w]
 
-    if FILEIN is None and COLORSPACE is common.ColorSpace.GRAYSCALE:
+    if COLORSPACE is common.ColorSpace.GRAYSCALE:
         convmatrix = numpy.array([[1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
-    elif FILEIN is None and COLORSPACE is common.ColorSpace.BT601:
+    elif COLORSPACE is common.ColorSpace.BT601:
         convmatrix = numpy.array(
             [[1.0, 0.0, 1.402], [1.0, -0.34413628620102216, -0.7141362862010221],
              [1.0, 1.772, 0.0]])
-    elif FILEIN is None and COLORSPACE is common.ColorSpace.BT709:
+    elif COLORSPACE is common.ColorSpace.BT709:
         convmatrix = numpy.array(
             [[1.0, 0.0, 1.5748], [1.0, -0.18732427293064877, -0.4681242729306488],
              [1.0, 1.8556, 0.0]])
@@ -184,8 +193,7 @@ def _main():
         subplot = fig.add_subplot()
         subplot.set_autoscalex_on(True)
         subplot.set_autoscaley_on(False)
-        if PLOT == 1 or convmatrix is not None or (
-                FILEIN is not None and COLORSPACE is common.ColorSpace.YUV):
+        if PLOT == 1 or convmatrix is not None:
             subplot.set_ybound(-0.1 * PLOTSCALE, 1.1 * PLOTSCALE)
         else:
             subplot.set_ybound(-0.6 * PLOTSCALE, 0.6 * PLOTSCALE)
@@ -247,7 +255,7 @@ def _main():
         matplotlib.pyplot.show()
     else:
         if LIMITED or RAW16OUT:
-            if FILEIN is not None or convmatrix is not None:
+            if convmatrix is not None:
                 outdata *= 219.0
                 outdata += 16.0
             else:
@@ -258,7 +266,7 @@ def _main():
             if RAW16OUT:
                 outdata *= 256.0
         else:
-            if FILEIN is None and convmatrix is None:
+            if convmatrix is None:
                 outdata[1:] += 0.5
             outdata *= 255.0
 
