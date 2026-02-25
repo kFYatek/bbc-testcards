@@ -14,6 +14,27 @@ class ColorSpace(enum.Enum):
     BT709 = 709
 
 
+ColorSpace.YUV.from_rgb_matrix = numpy.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+ColorSpace.YUV.to_rgb_matrix = numpy.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+
+ColorSpace.GRAYSCALE.from_rgb_matrix = numpy.array(
+    [[0.299, 0.587, 0.114], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+ColorSpace.GRAYSCALE.to_rgb_matrix = numpy.array(
+    [[1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
+
+ColorSpace.BT601.from_rgb_matrix = numpy.array(
+    [[0.299, 0.587, 0.114], [-0.16873589164785552, -0.3312641083521445, 0.5],
+     [0.5, -0.4186875891583452, -0.08131241084165478]])
+ColorSpace.BT601.to_rgb_matrix = numpy.array(
+    [[1.0, 0.0, 1.402], [1.0, -0.34413628620102216, -0.7141362862010221], [1.0, 1.772, 0.0]])
+
+ColorSpace.BT709.from_rgb_matrix = numpy.array(
+    [[0.2126, 0.7152, 0.0722], [-0.11457210605733995, -0.3854278939426601, 0.5],
+     [0.5, -0.4541529083058166, -0.04584709169418339]])
+ColorSpace.BT709.to_rgb_matrix = numpy.array(
+    [[1.0, 0.0, 1.5748], [1.0, -0.18732427293064877, -0.4681242729306488], [1.0, 1.8556, 0.0]])
+
+
 class ScalingMode(enum.Enum):
     NONE = 0
     VERTICAL = 1
