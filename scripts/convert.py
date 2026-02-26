@@ -1,26 +1,29 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import argparse
+import enum
 import math
 import os
+import sys
 
 import PIL.Image
 import numpy
 
 import common
 
-if not 'get_flattened_data' in PIL.Image.Image.__dict__.keys():
-    PIL.Image.Image.get_flattened_data = PIL.Image.Image.getdata
+
+class InputFormat(enum.Enum):
+    YUV = 0
+    RGB = 1
 
 
-def _main():
+def _main(*args):
     try:
         COLORSPACE = common.ColorSpace(int(os.environ.get('COLORSPACE')))
     except Exception:
         COLORSPACE = common.ColorSpace.BT601
     LIMITED = bool(int(os.environ.get('LIMITED') or '0'))
-    RAW16IN = int(os.environ.get('RAW16IN') or '0')
     RAW16OUT = bool(int(os.environ.get('RAW16OUT') or '0'))
-    FILEIN = os.environ.get('FILEIN')
     PLOT = int(os.environ.get('PLOT') or '0')
     PLOTSCALE = float(os.environ.get('PLOTSCALE') or '1')
 
@@ -34,59 +37,56 @@ def _main():
     except Exception:
         SCALE = common.ScalingMode.NONE
 
-    if FILEIN is not None:
-        image = PIL.Image.open(FILEIN)
-        width = image.width
-        height = image.height
-        if image.mode.startswith('I;16'):
-            rgbdata = numpy.array(image.get_flattened_data())
-            rgbdata = rgbdata.reshape((1, height, width))
-            rgbdata = (rgbdata - 4096.0) / 56064.0
-            rgbdata = rgbdata.repeat(3, axis=0)
+    parser = argparse.ArgumentParser(
+        description='Convert an initially preprocessed image to a more usable format.')
+    parser.add_argument('input_file', type=str,
+                        help='Input file. May be any format supported by PIL or raw{16|float}:[filename@]{width}x{height} - if no filename is specified for raw, it\'s read from stdin.')
+    parser.add_argument('--input-format', type=lambda x: InputFormat(int(x)),
+                        help=f'Input format {list(InputFormat)}. Default is RGB for PIL input and YUV for raw input.')
+    args = parser.parse_args(args)
+
+    def infer_dimensions(samples):
+        if samples % 1080 == 0 and samples // 1080 >= 1440:
+            return samples // 1080, 1080
+        elif samples % 576 == 0 and samples // 576 >= 720:
+            return samples // 576, 576
+        elif samples % 378 == 0 and samples // 378 >= 486:
+            return samples // 378, 378
+
+    data, data_range = common.read_image(args.input_file, infer_dimensions)
+    input_format = args.input_format
+    if input_format is None:
+        if ':' in args.input_file and args.input_file.startswith('raw'):
+            input_format = InputFormat.YUV
         else:
-            image = image.convert('RGB')
-            rgbdata = numpy.array(image.get_flattened_data())
-            rgbdata = rgbdata.reshape((height, width, 3))
-            rgbdata = (rgbdata - 16.0) / 219.0
-            rgbdata = rgbdata.transpose((2, 0, 1))
-        yuvdata = numpy.matvec(COLORSPACE.from_rgb_matrix, rgbdata, axes=[(0, 1), (0), (0)])
+            input_format = InputFormat.RGB
+
+    width = data.shape[1]
+    height = data.shape[0]
+    data = data.transpose((2, 0, 1))
+
+    if input_format == InputFormat.RGB:
+        if data.shape[0] == 1:
+            data = data.repeat(3, axis=2)
+        if data_range == 65535:
+            data = (data - 4096.0) / 56064.0
+        elif data_range == 255:
+            data = (data - 16.0) / 219.0
+        else:
+            assert data_range == 1
+        yuvdata = numpy.matvec(COLORSPACE.from_rgb_matrix, data, axes=[(0, 1), (0), (0)])
         COLORSPACE = common.ColorSpace.YUV
     else:
-        with open('/dev/stdin', 'rb') as f:
-            data = f.read()
-
-        multiplier = 6 if RAW16IN > 0 else 12
-        if len(data) == multiplier * 1920 * 1080:
-            width = 1920
-            height = 1080
-        elif len(data) % (multiplier * 576) == 0 and len(data) // (multiplier * 576) >= 720:
-            width = len(data) // (multiplier * 576)
-            height = 576
-        elif len(data) % (multiplier * 378) == 0 and len(data) // (multiplier * 378) >= 486:
-            width = len(data) // (multiplier * 378)
-            height = 378
-
-        if RAW16IN > 0:
-            yuvdata_raw = numpy.ndarray((height, width, 3), dtype=numpy.uint16,
-                                        buffer=bytearray(data))
-        else:
-            yuvdata_raw = numpy.ndarray((3, height, width), dtype=numpy.float32,
-                                        buffer=bytearray(data))
-        yuvdata = numpy.zeros(yuvdata_raw.shape)
-        yuvdata[:, :, :] = yuvdata_raw
-
-        if RAW16IN == 1:
-            yuvdata = numpy.transpose(yuvdata, (2, 0, 1))
-            yuvdata /= 256.0
+        yuvdata = 1.0 * data
+        if data_range in (255, 65535):
+            if data_range == 65535:
+                yuvdata /= 256.0
             yuvdata[0] -= 16.0
             yuvdata[0] /= 219.0
             yuvdata[1:] -= 128.0
             yuvdata[1:] /= 224.0
-        elif RAW16IN == 2:
-            rgbdata = numpy.transpose(yuvdata, (2, 0, 1))
-            rgbdata = (rgbdata - 4096.0) / (219.0 * 256.0)
-            yuvdata = numpy.matvec(COLORSPACE.from_rgb_matrix, rgbdata, axes=[(0, 1), (0), (0)])
-            COLORSPACE = common.ColorSpace.YUV
+        else:
+            assert data_range == 1
 
     dimensions = None
     src_left = 0.0
@@ -254,4 +254,4 @@ def _main():
 
 
 if __name__ == "__main__":
-    _main()
+    sys.exit(_main(*sys.argv[1:]))
