@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import argparse
-import enum
 import math
 import os
 import subprocess
@@ -12,16 +11,7 @@ import numpy
 import common
 
 
-class InputFormat(enum.Enum):
-    YUV = 0
-    RGB = 1
-
-
 def _main(*args):
-    try:
-        COLORSPACE = common.ColorSpace(int(os.environ.get('COLORSPACE')))
-    except Exception:
-        COLORSPACE = common.ColorSpace.BT601
     PLOT = int(os.environ.get('PLOT') or '0')
     PLOTSCALE = float(os.environ.get('PLOTSCALE') or '1')
 
@@ -39,11 +29,16 @@ def _main(*args):
         description='Convert an initially preprocessed image to a more usable format.')
     parser.add_argument('input_file', type=str,
                         help='Input file. May be any format supported by PIL or raw{16|float}:[filename@]{width}x{height} - if no filename is specified for raw, it\'s read from stdin.')
-    parser.add_argument('--input-format', type=lambda x: InputFormat(int(x)),
-                        help=f'Input format {list(InputFormat)}. Default is RGB for PIL input and YUV for raw input.')
+    parser.add_argument('--input-colorspace', type=lambda x: common.ColorSpace(int(x)),
+                        help=f'Color space to use when converting input to YUV {list(common.ColorSpace)}. Default is BT.601 for PIL input and YUV for raw input.')
+    parser.add_argument('--output-colorspace', type=lambda x: common.ColorSpace(int(x)),
+                        default=common.ColorSpace.YUV if PLOT > 0 else common.ColorSpace.BT601,
+                        help=f'Color space to use when converting to RGB on output {list(common.ColorSpace)}.')
     if PLOT <= 0:
-        parser.add_argument('output_file', type=str, help='Output file. May be any format supported by ImageMagick or raw16:[filename] (stdout by default).')
-        parser.add_argument('--fullrange', action='store_true', help='Use full (0..65535) instead of limited/video (4096..60160) range on output.')
+        parser.add_argument('output_file', type=str,
+                            help='Output file. May be any format supported by ImageMagick or raw16:[filename] (stdout by default).')
+        parser.add_argument('--fullrange', action='store_true',
+                            help='Use full (0..65535) instead of limited/video (4096..60160) range on output.')
     args = parser.parse_args(args)
 
     def infer_dimensions(samples):
@@ -53,31 +48,21 @@ def _main(*args):
             return samples // 576, 576
         elif samples % 378 == 0 and samples // 378 >= 486:
             return samples // 378, 378
+        raise Exception('Unable to infer image dimensions')
 
     data, data_range = common.read_image(args.input_file, infer_dimensions)
-    input_format = args.input_format
-    if input_format is None:
+    input_colorspace = args.input_colorspace
+    if input_colorspace is None:
         if ':' in args.input_file and args.input_file.startswith('raw'):
-            input_format = InputFormat.YUV
+            input_colorspace = common.ColorSpace.YUV
         else:
-            input_format = InputFormat.RGB
+            input_colorspace = common.ColorSpace.BT601
 
     width = data.shape[1]
     height = data.shape[0]
     data = data.transpose((2, 0, 1))
 
-    if input_format == InputFormat.RGB:
-        if data.shape[0] == 1:
-            data = data.repeat(3, axis=2)
-        if data_range == 65535:
-            data = (data - 4096.0) / 56064.0
-        elif data_range == 255:
-            data = (data - 16.0) / 219.0
-        else:
-            assert data_range == 1
-        yuvdata = numpy.matvec(COLORSPACE.from_rgb_matrix, data, axes=[(0, 1), (0), (0)])
-        COLORSPACE = common.ColorSpace.YUV
-    else:
+    if input_colorspace is common.ColorSpace.YUV:
         yuvdata = 1.0 * data
         if data_range in (255, 65535):
             if data_range == 65535:
@@ -88,6 +73,16 @@ def _main(*args):
             yuvdata[1:] /= 224.0
         else:
             assert data_range == 1
+    else:
+        if data.shape[0] == 1:
+            data = data.repeat(3, axis=2)
+        if data_range == 65535:
+            data = (data - 4096.0) / 56064.0
+        elif data_range == 255:
+            data = (data - 16.0) / 219.0
+        else:
+            assert data_range == 1
+        yuvdata = numpy.matvec(args.input_colorspace.from_rgb_matrix, data, axes=[(0, 1), 0, 0])
 
     dimensions = None
     src_left = 0.0
@@ -101,8 +96,8 @@ def _main(*args):
 
     if dimensions is not None:
         while dimensions.precrop_w > yuvdata.shape[2]:
-            reversed = numpy.flip(yuvdata, axis=2)
-            yuvdata = numpy.concatenate([reversed, yuvdata, reversed], axis=2)
+            flipped = numpy.flip(yuvdata, axis=2)
+            yuvdata = numpy.concatenate([flipped, yuvdata, flipped], axis=2)
         if dimensions.precrop_w != yuvdata.shape[2]:
             yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.precrop_w) // 2:]
             yuvdata = yuvdata[:, :, :dimensions.precrop_w]
@@ -119,7 +114,7 @@ def _main(*args):
             yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.crop_w) // 2:]
             yuvdata = yuvdata[:, :, :dimensions.crop_w]
 
-    outdata = numpy.matvec(COLORSPACE.to_rgb_matrix, yuvdata, axes=[(0, 1), (0), (0)])
+    outdata = numpy.matvec(args.output_colorspace.to_rgb_matrix, yuvdata, axes=[(0, 1), 0, 0])
 
     if PLOT > 0:
         import matplotlib.pyplot
@@ -158,7 +153,7 @@ def _main(*args):
         subplot = fig.add_subplot()
         subplot.set_autoscalex_on(True)
         subplot.set_autoscaley_on(False)
-        if PLOT == 1 or COLORSPACE is not common.ColorSpace.YUV:
+        if PLOT == 1 or args.output_colorspace is not common.ColorSpace.YUV:
             subplot.set_ybound(-0.1 * PLOTSCALE, 1.1 * PLOTSCALE)
         else:
             subplot.set_ybound(-0.6 * PLOTSCALE, 0.6 * PLOTSCALE)
@@ -169,7 +164,7 @@ def _main(*args):
         mpline2, = subplot.plot(xdata[0::UPSAMPLE], outdata[PLOT - 1, lineno, 0::UPSAMPLE], 'o',
                                 markersize=1)
 
-        slider_frame = matplotlib.pyplot.axes([0.1, 0.1, 0.8, 0.03])
+        slider_frame = matplotlib.pyplot.axes((0.1, 0.1, 0.8, 0.03))
         slider = matplotlib.widgets.Slider(slider_frame, 'Line', 0, outdata.shape[1] - 1, valinit=0,
                                            valfmt='%d')
 
@@ -186,7 +181,7 @@ def _main(*args):
             subplot.set_title(title)
 
         def measure_frequency(axes):
-            global freq
+            nonlocal freq
             left, right = subplot.get_xlim()
             left = max(int(math.floor(left * UPSAMPLE)), 0)
             right = min(int(math.ceil(right * UPSAMPLE)), outdata.shape[2] - 1)
@@ -194,10 +189,10 @@ def _main(*args):
             if left == right:
                 freq = None
             else:
-                input = outdata[PLOT - 1, lineno][left:right + 1]
-                fft = numpy.fft.rfft(input - numpy.mean(input))
+                inp = outdata[PLOT - 1, lineno][left:right + 1]
+                fft = numpy.fft.rfft(inp - numpy.mean(inp))
                 domf = numpy.argmax(numpy.abs(fft))
-                if domf > 0 and domf < len(fft) - 1:
+                if 0 < domf < len(fft) - 1:
                     domf_pre = numpy.abs(fft[domf - 1])
                     domf_peak = numpy.abs(fft[domf])
                     domf_post = numpy.abs(fft[domf + 1])
@@ -206,11 +201,11 @@ def _main(*args):
                         domf = domf + numpy.log(domf_pre / domf_post) / numpy.log(
                             domf_pre * domf_pre * domf_post * domf_post / (
                                     domf_peak * domf_peak * domf_peak * domf_peak))
-                freq = domf * UPSAMPLE / len(input)
+                freq = domf * UPSAMPLE / len(inp)
             update_title()
 
         def slider_update(val):
-            global lineno
+            nonlocal lineno
             lineno = int(numpy.floor(slider.val))
             mpline.set_ydata(outdata[PLOT - 1, lineno] * PLOTSCALE)
             mpline2.set_ydata(outdata[PLOT - 1, lineno, 0::UPSAMPLE] * PLOTSCALE)
@@ -225,17 +220,17 @@ def _main(*args):
     else:
         raw16out = args.output_file.startswith('raw16:')
         if raw16out:
-            format, output_file = args.output_file.split(':', 1)
+            format_name, output_file = args.output_file.split(':', 1)
             if output_file == '':
                 output_file = '/dev/stdout'
         else:
             output_file = args.output_file
         if args.fullrange:
-            if COLORSPACE is common.ColorSpace.YUV:
+            if args.output_colorspace is common.ColorSpace.YUV:
                 outdata[1:] += 0.5
             outdata *= 65535.0
         else:
-            if COLORSPACE is not common.ColorSpace.YUV:
+            if args.output_colorspace is not common.ColorSpace.YUV:
                 outdata *= 219.0
                 outdata += 16.0
             else:
@@ -258,19 +253,19 @@ def _main(*args):
                        'rgb:-']
             iccfile = None
             if not args.fullrange:
-                if COLORSPACE is common.ColorSpace.GRAYSCALE:
+                if args.output_colorspace is common.ColorSpace.GRAYSCALE:
                     iccfile = 'ITU-1886-gray-video16-v4.icc'
-                elif COLORSPACE is common.ColorSpace.BT601:
+                elif args.output_colorspace is common.ColorSpace.BT601:
                     if output.shape[0] in range(480, 487):
                         iccfile = 'ITU-601-525-video16-v4.icc'
                     else:
                         iccfile = 'ITU-601-625-video16-v4.icc'
-                elif COLORSPACE is common.ColorSpace.BT709:
+                elif args.output_colorspace is common.ColorSpace.BT709:
                     iccfile = 'ITU-709-video16-v4.icc'
             if iccfile is not None:
                 command += ['+profile', 'icc', '-profile', os.path.join(
                     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), iccfile)]
-            if COLORSPACE is common.ColorSpace.GRAYSCALE:
+            if args.output_colorspace is common.ColorSpace.GRAYSCALE:
                 command += ['-define', 'png:color-type=0']
             else:
                 command += ['-define', 'png:color-type=2']

@@ -16,8 +16,8 @@ remove_tmpfiles() {
 trap remove_tmpfiles EXIT
 
 # HD testcards, never scale
-env CARD=0 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - | env COLORSPACE=709 "$SCRIPTDIR/convert.py" rawfloat: "$OUTDIR/TestCardX.png"
-env CARD=13 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - | env COLORSPACE=709 "$SCRIPTDIR/convert.py" rawfloat: "$OUTDIR/TestCard3D.png"
+env CARD=0 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" --output-colorspace 709 rawfloat: "$OUTDIR/TestCardX.png"
+env CARD=13 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" --output-colorspace 709 rawfloat: "$OUTDIR/TestCard3D.png"
 
 # Mechanical test cards, don't scale for now
 env CARD=1 COLORCONV=4 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
@@ -39,8 +39,8 @@ env CARD=3 COLORCONV=4 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
     -define png:color-type=0 "$OUTDIR/CircleAndLine.png"
 
 # Test Cards A and B are high-res reproductions, just scale them down
-env CARD=4 SCALE=1 SCALER=lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - | env CARD=4 SCALE=2 COLORSPACE=1 "$SCRIPTDIR/convert.py" rawfloat: "$OUTDIR/TestCardA.png"
-env CARD=5 SCALE=1 SCALER=lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - | env CARD=5 SCALE=2 COLORSPACE=1 "$SCRIPTDIR/convert.py" rawfloat: "$OUTDIR/TestCardB.png"
+env CARD=4 SCALE=1 SCALER=lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - | env CARD=4 SCALE=2 "$SCRIPTDIR/convert.py" --output-colorspace 1 rawfloat: "$OUTDIR/TestCardA.png"
+env CARD=5 SCALE=1 SCALER=lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - | env CARD=5 SCALE=2 "$SCRIPTDIR/convert.py" --output-colorspace 1 rawfloat: "$OUTDIR/TestCardB.png"
 
 # Use Test Cards C and D from Richard T. Russell's GIFs
 for CARD in C D; do
@@ -59,7 +59,7 @@ magick "$SCRIPTDIR/../d0bfa1fd2a9191224e10dafe9d9fc321dc254d80.jpg" \
     -type GrayScaleAlpha -fuzz '3%' -fill none -draw "color 3,2 floodfill" \
     -crop 764x576+2+0 png:"$TMPIMAGE"
 env CARD=2 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
-| env COLORSPACE=1 "$SCRIPTDIR/convert.py" rawfloat: png:- \
+| "$SCRIPTDIR/convert.py" --output-colorspace 1 rawfloat: png:- \
 | magick png:- -crop 1400x1080+260+0 -filter Lanczos -resize 844x595\! \
     -evaluate Pow 1.15 -evaluate Max 6.275% png:"$TMPIMAGE" -geometry +41+9 -composite \
     png:"$TMPIMAGE"
