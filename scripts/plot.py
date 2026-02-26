@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import argparse
 import math
-import os
 import sys
 
 import matplotlib.pyplot
@@ -13,27 +12,40 @@ import common
 
 
 def _main(*args):
-    PLOT = int(os.environ.get('PLOT') or '0')
-    assert PLOT > 0
-
     parser = argparse.ArgumentParser(
         description='Convert an initially preprocessed image to a more usable format.')
     parser.add_argument('input_file', type=str,
                         help='Input file. May be any format supported by PIL or raw{16|float}:[filename@]{width}x{height} - if no filename is specified for raw, it\'s read from stdin.')
+    parser.add_argument('--channel', type=str, default='Y', help='Channel to plot, one of YUVRGB.')
     parser.add_argument('--input-colorspace', type=lambda x: common.ColorSpace(int(x)),
                         help=f'Color space to use when converting input to YUV {list(common.ColorSpace)}. Default is BT.601 for PIL input and YUV for raw input.')
     parser.add_argument('--output-colorspace', type=lambda x: common.ColorSpace(int(x)),
-                        default=common.ColorSpace.YUV,
-                        help=f'Color space to use when converting to RGB on output {list(common.ColorSpace)}.')
+                        default=common.ColorSpace.BT601,
+                        help=f'Color space to use when converting to RGB when plotting RGB channels. Default is BT.601.')
     parser.add_argument('--black', type=float, default=0.0,
                         help='Value on the Y axis to use as black level.')
     parser.add_argument('--white', type=float, default=1.0,
                         help='Value on the Y axis to use as white level.')
     args = parser.parse_args(args)
 
-    data = numpy.matvec(args.output_colorspace.to_rgb_matrix,
-                        common.load_and_process_image(args.input_file, args.input_colorspace),
-                        axes=[(0, 1), 2, 2])[:, :, PLOT - 1]
+    data = common.load_and_process_image(args.input_file, args.input_colorspace)
+    if args.channel == 'Y':
+        data = data[:, :, 0]
+    elif args.channel == 'U':
+        data = data[:, :, 1]
+    elif args.channel == 'V':
+        data = data[:, :, 2]
+    else:
+        assert args.output_colorspace is not common.ColorSpace.YUV
+        data = numpy.matvec(args.output_colorspace.to_rgb_matrix, data, axes=[(0, 1), 2, 2])
+        if args.channel == 'R':
+            data = data[:, :, 0]
+        elif args.channel == 'G':
+            data = data[:, :, 1]
+        elif args.channel == 'B':
+            data = data[:, :, 2]
+        else:
+            raise Exception('Invalid channel')
 
     if data.shape[0] <= 405:
         orig_resolution = common.OriginalResolution.SYSA43
@@ -64,10 +76,10 @@ def _main(*args):
     subplot = fig.add_subplot()
     subplot.set_autoscalex_on(True)
     subplot.set_autoscaley_on(False)
-    if PLOT == 1 or args.output_colorspace is not common.ColorSpace.YUV:
-        subplot.set_ybound(plotscale(-0.1), plotscale(1.1))
-    else:
+    if args.channel in ('U', 'V'):
         subplot.set_ybound(plotscale(-0.6), plotscale(0.6))
+    else:
+        subplot.set_ybound(plotscale(-0.1), plotscale(1.1))
     matplotlib.pyplot.subplots_adjust(bottom=0.25)
 
     lineno = 0
