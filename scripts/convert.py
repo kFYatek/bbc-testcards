@@ -36,48 +36,10 @@ def _main(*args):
                             help='Use full (0..65535) instead of limited/video (4096..60160) range on output.')
     args = parser.parse_args(args)
 
-    def infer_dimensions(samples):
-        if samples % 1080 == 0 and samples // 1080 >= 1440:
-            return samples // 1080, 1080
-        elif samples % 576 == 0 and samples // 576 >= 720:
-            return samples // 576, 576
-        elif samples % 378 == 0 and samples // 378 >= 486:
-            return samples // 378, 378
-        raise Exception('Unable to infer image dimensions')
-
-    data, data_range = common.read_image(args.input_file, infer_dimensions)
-    input_colorspace = args.input_colorspace
-    if input_colorspace is None:
-        if ':' in args.input_file and args.input_file.startswith('raw'):
-            input_colorspace = common.ColorSpace.YUV
-        else:
-            input_colorspace = common.ColorSpace.BT601
-
-    width = data.shape[1]
-    height = data.shape[0]
-    data = data.transpose((2, 0, 1))
-
-    if input_colorspace is common.ColorSpace.YUV:
-        yuvdata = 1.0 * data
-        if data_range in (255, 65535):
-            if data_range == 65535:
-                yuvdata /= 256.0
-            yuvdata[0] -= 16.0
-            yuvdata[0] /= 219.0
-            yuvdata[1:] -= 128.0
-            yuvdata[1:] /= 224.0
-        else:
-            assert data_range == 1
-    else:
-        if data.shape[0] == 1:
-            data = data.repeat(3, axis=2)
-        if data_range == 65535:
-            data = (data - 4096.0) / 56064.0
-        elif data_range == 255:
-            data = (data - 16.0) / 219.0
-        else:
-            assert data_range == 1
-        yuvdata = numpy.matvec(args.input_colorspace.from_rgb_matrix, data, axes=[(0, 1), 0, 0])
+    yuvdata = common.load_and_process_image(args.input_file, args.input_colorspace).transpose(
+        (2, 0, 1))
+    width = yuvdata.shape[2]
+    height = yuvdata.shape[1]
 
     dimensions = None
     src_left = 0.0
