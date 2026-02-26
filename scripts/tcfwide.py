@@ -24,12 +24,16 @@ def _main():
     resample = lambda *args, **kwargs: common.resample(*args, **kwargs, resampler=resampler)
     data = subprocess.run(['magick', '../TestCardFElec-788.png', '-depth', '16', 'rgb:-'],
                           stdout=subprocess.PIPE, check=True).stdout
-    data = numpy.ndarray((576, 788, 3), dtype=numpy.uint16, buffer=data)
+    data = numpy.ndarray((576, 788, 3), dtype=numpy.uint16, buffer=data).copy()
+    # Remove the logos
+    data[447:475, 383:407, :] = 32238
+    data[496:527, 337:452, :] = 32238
     data = (data - 4096) / (219.0 * 256.0)
     fix_arrow_tip(data)
     # Shift to make the samples symmetrical
     data = resample(data, shift=5.0 / 9.0, axis=1, pad_mode='edge')
 
+    # ==== Copy the good parts ====
     result = numpy.zeros((576, 1024, 3))
     result[30:, :224, :] = data[30:, 10:234, :]
     result[30:, 352:672, :] = data[30:, 234:554, :]
@@ -41,15 +45,57 @@ def _main():
     result[-12:, -256:] = result[-12, -256:]
     result = result.swapaxes(0, 1)
 
+    # ==== Bottom castellations ====
+    result[542:, 224:288, :] = result[542:, 160:224, :]
+    result[542:, 288:352, :] = result[542:, 352:416, :]
+    result[542:, 672:736, :] = result[542:, 608:672, :]
+    result[542:, 736:800, :] = result[542:, 800:864, :]
+    result[575] = result[574]
+    for ch in range(result.shape[2]):
+        result[575, 484:540, ch] = numpy.linspace(result[575, 483, ch], result[575, 540, ch], 58)[
+            1:-1]
+
+    # ==== Grid reconstruction ====
+    result[:232, 224:232, :] = result[:232, 352:360, :]
+    result[344:542, 224:232, :] = result[344:542, 352:360, :]
+    result[280:296, 224:232, :] = 0.5 * (result[216:232, 224:232, :] + result[344:360, 224:232, :])
+    for ch in range(result.shape[2]):
+        for x in range(224, 232):
+            result[232:280, x, ch] = numpy.linspace(result[231, x, ch], result[280, x, ch], 50)[
+                1:-1]
+            result[296:344, x, ch] = numpy.linspace(result[295, x, ch], result[344, x, ch], 50)[
+                1:-1]
+
+    result[:232, 344:352, :] = result[:232, 664:672, :]
+    result[344:542, 344:352, :] = result[344:542, 664:672, :]
+    result[280:296, 344:352, :] = 0.5 * (result[216:232, 344:352, :] + result[344:360, 344:352, :])
+    for ch in range(result.shape[2]):
+        for x in range(344, 352):
+            result[232:280, x, ch] = numpy.linspace(result[231, x, ch], result[280, x, ch], 50)[
+                1:-1]
+            result[296:344, x, ch] = numpy.linspace(result[295, x, ch], result[344, x, ch], 50)[
+                1:-1]
+
+    result[:542, 280:288, :] = result[:542, 344:352, :]
+    result[:542, 288:296, :] = result[:542, 224:232, :]
+    for ch in range(result.shape[2]):
+        for y in range(542):
+            result[y, 232:280, ch] = numpy.linspace(result[y, 231, ch], result[y, 280, ch], 50)[
+                1:-1]
+            result[y, 296:344, ch] = numpy.linspace(result[y, 295, ch], result[y, 344, ch], 50)[
+                1:-1]
+
+    result[:542, 672:800, :] = result[:542, 224:352, :]
+
     # ==== Scale the top castellation independently ====
     topbar = data[0:30, 10:778]
     topbar[0] = topbar[1]
-    topbar[:, 354:414, :] = resample(
-        resample(topbar[1:, 355:413, :], 30, axis=0, pad_mode='symmetric'), 60, axis=1,
-        pad_mode='symmetric')
+    for ch in range(result.shape[2]):
+        topbar[0, 354:414, ch] = numpy.linspace(topbar[0, 353, ch], topbar[0, 414, ch], 62)[1:-1]
     topbar[29] = 2.0 * topbar[29] - 1.0
     orig_topbar = topbar
-    topbar = resample(topbar, 1034, axis=1)[:, 5:1029, :]
+    topbar = resample(topbar, 1034, shift_to_center=True, axis=1, pad_mode='symmetric')[
+        :, 5:1029, :]
     topbar[:, 484:540, :] = orig_topbar[:, 356:412, :]
     topbar[:, :48, :] = 1.0
     topbar[:, -48:, :] = 1.0
