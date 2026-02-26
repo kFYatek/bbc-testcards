@@ -14,7 +14,6 @@ import common
 
 def _main(*args):
     PLOT = int(os.environ.get('PLOT') or '0')
-    PLOTSCALE = float(os.environ.get('PLOTSCALE') or '1')
     assert PLOT > 0
 
     parser = argparse.ArgumentParser(
@@ -26,6 +25,10 @@ def _main(*args):
     parser.add_argument('--output-colorspace', type=lambda x: common.ColorSpace(int(x)),
                         default=common.ColorSpace.YUV,
                         help=f'Color space to use when converting to RGB on output {list(common.ColorSpace)}.')
+    parser.add_argument('--black', type=float, default=0.0,
+                        help='Value on the Y axis to use as black level.')
+    parser.add_argument('--white', type=float, default=1.0,
+                        help='Value on the Y axis to use as white level.')
     args = parser.parse_args(args)
 
     data = numpy.matvec(args.output_colorspace.to_rgb_matrix,
@@ -54,19 +57,23 @@ def _main(*args):
     data = common.resample_with_mirrors(data, data.shape[1] * UPSAMPLE)
     xdata = numpy.array(range(data.shape[1])) / UPSAMPLE
 
+    def plotscale(value):
+        return value * (args.white - args.black) + args.black
+
     fig = matplotlib.pyplot.figure()
     subplot = fig.add_subplot()
     subplot.set_autoscalex_on(True)
     subplot.set_autoscaley_on(False)
     if PLOT == 1 or args.output_colorspace is not common.ColorSpace.YUV:
-        subplot.set_ybound(-0.1 * PLOTSCALE, 1.1 * PLOTSCALE)
+        subplot.set_ybound(plotscale(-0.1), plotscale(1.1))
     else:
-        subplot.set_ybound(-0.6 * PLOTSCALE, 0.6 * PLOTSCALE)
+        subplot.set_ybound(plotscale(-0.6), plotscale(0.6))
     matplotlib.pyplot.subplots_adjust(bottom=0.25)
 
     lineno = 0
-    mpline, = subplot.plot(xdata, data[lineno] * PLOTSCALE)
-    mpline2, = subplot.plot(xdata[0::UPSAMPLE], data[lineno, 0::UPSAMPLE], 'o', markersize=1)
+    mpline, = subplot.plot(xdata, plotscale(data[lineno]))
+    mpline2, = subplot.plot(xdata[0::UPSAMPLE], plotscale(data[lineno, 0::UPSAMPLE]), 'o',
+                            markersize=1)
 
     slider_frame = matplotlib.pyplot.axes((0.1, 0.1, 0.8, 0.03))
     slider = matplotlib.widgets.Slider(slider_frame, 'Line', 0, data.shape[0] - 1, valinit=0,
@@ -111,8 +118,8 @@ def _main(*args):
     def slider_update(val):
         nonlocal lineno
         lineno = int(numpy.floor(slider.val))
-        mpline.set_ydata(data[lineno] * PLOTSCALE)
-        mpline2.set_ydata(data[lineno, 0::UPSAMPLE] * PLOTSCALE)
+        mpline.set_ydata(plotscale(data[lineno]))
+        mpline2.set_ydata(plotscale(data[lineno, 0::UPSAMPLE]))
         subplot.relim()
         matplotlib.pyplot.draw()
         measure_frequency(None)
