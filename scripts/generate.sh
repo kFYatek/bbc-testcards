@@ -39,8 +39,8 @@ env CARD=3 COLORCONV=4 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
     -define png:color-type=0 "$OUTDIR/CircleAndLine.png"
 
 # Test Cards A and B are high-res reproductions, just scale them down
-env CARD=4 SCALE=1 SCALER=lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - | env CARD=4 SCALE=2 "$SCRIPTDIR/convert.py" --output-colorspace 1 rawfloat: "$OUTDIR/TestCardA.png"
-env CARD=5 SCALE=1 SCALER=lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - | env CARD=5 SCALE=2 "$SCRIPTDIR/convert.py" --output-colorspace 1 rawfloat: "$OUTDIR/TestCardB.png"
+env CARD=4 SCALE=1 SCALER=lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" --card 4 --scale 2 --output-colorspace 1 rawfloat: "$OUTDIR/TestCardA.png"
+env CARD=5 SCALE=1 SCALER=lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" --card 5 --scale 2 --output-colorspace 1 rawfloat: "$OUTDIR/TestCardB.png"
 
 # Use Test Cards C and D from Richard T. Russell's GIFs
 for CARD in C D; do
@@ -72,7 +72,7 @@ env CARD=2 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
 
 # Recreation of the optical Test Card F
 env CARD=8 SCALE=1 SCALER=lanczos ANTIRING=2 vspipe "$SCRIPTDIR/extract.vpy" - \
-| env CARD=8 SCALE=2 "$SCRIPTDIR/convert.py" rawfloat: png:"$TMPIMAGE"
+| "$SCRIPTDIR/convert.py" --card 8 --scale 2 rawfloat: png:"$TMPIMAGE"
 CARDIMAGE="$(mktemp)"
 TMPFILES="$TMPFILES $CARDIMAGE"
 magick png:"$TMPIMAGE" -crop 720x1+0+26 -filter Point -resize 720x2\! png:- \

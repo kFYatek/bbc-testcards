@@ -15,16 +15,6 @@ def _main(*args):
     PLOT = int(os.environ.get('PLOT') or '0')
     PLOTSCALE = float(os.environ.get('PLOTSCALE') or '1')
 
-    try:
-        CARD = common.CARDS[int(os.environ['CARD'])]
-    except Exception:
-        CARD = None
-
-    try:
-        SCALE = common.ScalingMode(int(os.environ.get('SCALE')))
-    except Exception:
-        SCALE = common.ScalingMode.NONE
-
     parser = argparse.ArgumentParser(
         description='Convert an initially preprocessed image to a more usable format.')
     parser.add_argument('input_file', type=str,
@@ -34,6 +24,11 @@ def _main(*args):
     parser.add_argument('--output-colorspace', type=lambda x: common.ColorSpace(int(x)),
                         default=common.ColorSpace.YUV if PLOT > 0 else common.ColorSpace.BT601,
                         help=f'Color space to use when converting to RGB on output {list(common.ColorSpace)}.')
+    parser.add_argument('--card', type=int,
+                        help='Test card number from common.py. Scaling and shifting will be applied accordingly if provided.')
+    parser.add_argument('--scale', type=lambda x: common.ScalingMode(int(x)),
+                        default=common.ScalingMode.NONE,
+                        help=f'Scaling mode to use {list(common.ScalingMode)}.')
     if PLOT <= 0:
         parser.add_argument('output_file', type=str,
                             help='Output file. May be any format supported by ImageMagick or raw16:[filename] (stdout by default).')
@@ -87,12 +82,13 @@ def _main(*args):
     dimensions = None
     src_left = 0.0
     src_top = 0.0
-    if CARD is not None:
-        dimensions = common.get_scaling_dimensions(SCALE, CARD.mode)
-        if width >= common.get_scaling_dimensions(common.ScalingMode.VERTICAL, CARD.mode).crop_w:
-            src_left = CARD.src_left
+    if args.card is not None:
+        dimensions = common.get_scaling_dimensions(args.scale, common.CARDS[args.card].mode)
+        if width >= common.get_scaling_dimensions(common.ScalingMode.VERTICAL,
+                                                  common.CARDS[args.card].mode).crop_w:
+            src_left = common.CARDS[args.card].src_left
         if height == 1080:
-            src_top = CARD.src_top
+            src_top = common.CARDS[args.card].src_top
 
     if dimensions is not None:
         while dimensions.precrop_w > yuvdata.shape[2]:
@@ -121,8 +117,8 @@ def _main(*args):
         import matplotlib.widgets
 
         if dimensions is None:
-            if CARD is not None:
-                orig_resolution = CARD.mode
+            if args.card is not None:
+                orig_resolution = common.CARDS[args.card].mode
             elif height <= 405:
                 orig_resolution = common.OriginalResolution.SYSA43
             elif height <= 625:
