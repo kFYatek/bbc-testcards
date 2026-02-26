@@ -4,9 +4,9 @@ import argparse
 import enum
 import math
 import os
+import subprocess
 import sys
 
-import PIL.Image
 import numpy
 
 import common
@@ -22,8 +22,6 @@ def _main(*args):
         COLORSPACE = common.ColorSpace(int(os.environ.get('COLORSPACE')))
     except Exception:
         COLORSPACE = common.ColorSpace.BT601
-    LIMITED = bool(int(os.environ.get('LIMITED') or '0'))
-    RAW16OUT = bool(int(os.environ.get('RAW16OUT') or '0'))
     PLOT = int(os.environ.get('PLOT') or '0')
     PLOTSCALE = float(os.environ.get('PLOTSCALE') or '1')
 
@@ -43,6 +41,9 @@ def _main(*args):
                         help='Input file. May be any format supported by PIL or raw{16|float}:[filename@]{width}x{height} - if no filename is specified for raw, it\'s read from stdin.')
     parser.add_argument('--input-format', type=lambda x: InputFormat(int(x)),
                         help=f'Input format {list(InputFormat)}. Default is RGB for PIL input and YUV for raw input.')
+    if PLOT <= 0:
+        parser.add_argument('output_file', type=str, help='Output file. May be any format supported by ImageMagick or raw16:[filename] (stdout by default).')
+        parser.add_argument('--fullrange', action='store_true', help='Use full (0..65535) instead of limited/video (4096..60160) range on output.')
     args = parser.parse_args(args)
 
     def infer_dimensions(samples):
@@ -222,7 +223,18 @@ def _main(*args):
         slider_update(0)
         matplotlib.pyplot.show()
     else:
-        if LIMITED or RAW16OUT:
+        raw16out = args.output_file.startswith('raw16:')
+        if raw16out:
+            format, output_file = args.output_file.split(':', 1)
+            if output_file == '':
+                output_file = '/dev/stdout'
+        else:
+            output_file = args.output_file
+        if args.fullrange:
+            if COLORSPACE is common.ColorSpace.YUV:
+                outdata[1:] += 0.5
+            outdata *= 65535.0
+        else:
             if COLORSPACE is not common.ColorSpace.YUV:
                 outdata *= 219.0
                 outdata += 16.0
@@ -231,26 +243,40 @@ def _main(*args):
                 outdata[0] += 16.0
                 outdata[1:] *= 224.0
                 outdata[1:] += 128.0
-            if RAW16OUT:
-                outdata *= 256.0
-        else:
-            if COLORSPACE is common.ColorSpace.YUV:
-                outdata[1:] += 0.5
-            outdata *= 255.0
+            outdata *= 256.0
 
         outdata = numpy.transpose(outdata, (1, 2, 0))
-        outbuf = bytearray(outdata.size * (2 if RAW16OUT else 1))
-        output = numpy.ndarray(outdata.shape, dtype='uint16' if RAW16OUT else 'uint8',
-                               buffer=outbuf)
-        output[:, :, :] = numpy.round(
-            numpy.minimum(numpy.maximum(outdata, 0.0), 65535.0 if RAW16OUT else 255.0))
+        outbuf = bytearray(outdata.size * 2)
+        output = numpy.ndarray(outdata.shape, dtype=numpy.uint16, buffer=outbuf)
+        output[:, :, :] = numpy.round(numpy.minimum(numpy.maximum(outdata, 0.0), 65535.0))
 
-        with open('/dev/stdout', 'wb') as f:
-            if RAW16OUT:
+        if raw16out:
+            with open(output_file, 'wb') as f:
                 f.write(outbuf)
+        else:
+            command = ['magick', '-size', f'{output.shape[1]}x{output.shape[0]}', '-depth', '16',
+                       'rgb:-']
+            iccfile = None
+            if not args.fullrange:
+                if COLORSPACE is common.ColorSpace.GRAYSCALE:
+                    iccfile = 'ITU-1886-gray-video16-v4.icc'
+                elif COLORSPACE is common.ColorSpace.BT601:
+                    if output.shape[0] in range(480, 487):
+                        iccfile = 'ITU-601-525-video16-v4.icc'
+                    else:
+                        iccfile = 'ITU-601-625-video16-v4.icc'
+                elif COLORSPACE is common.ColorSpace.BT709:
+                    iccfile = 'ITU-709-video16-v4.icc'
+            if iccfile is not None:
+                command += ['+profile', 'icc', '-profile', os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), iccfile)]
+            if COLORSPACE is common.ColorSpace.GRAYSCALE:
+                command += ['-define', 'png:color-type=0']
             else:
-                PIL.Image.frombuffer('RGB', (output.shape[1], output.shape[0]), outbuf).save(f,
-                                                                                             format='PNG')
+                command += ['-define', 'png:color-type=2']
+            command += [output_file]
+
+            subprocess.run(command, input=outbuf, check=True)
 
 
 if __name__ == "__main__":
