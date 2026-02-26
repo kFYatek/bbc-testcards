@@ -84,8 +84,8 @@ def _main(*args):
 
     lineno = 0
     mpline, = subplot.plot(xdata, plotscale(data[lineno]))
-    mpline2, = subplot.plot(xdata[0::UPSAMPLE], plotscale(data[lineno, 0::UPSAMPLE]), 'o',
-                            markersize=1)
+    mpdots, = subplot.plot(xdata[0::UPSAMPLE], plotscale(data[lineno, 0::UPSAMPLE]), 'o',
+                           markersize=1, color=mpline.get_color())
 
     slider_frame = matplotlib.pyplot.axes((0.1, 0.1, 0.8, 0.03))
     slider = matplotlib.widgets.Slider(slider_frame, 'Line', 0, data.shape[0] - 1, valinit=0,
@@ -108,7 +108,7 @@ def _main(*args):
         left, right = subplot.get_xlim()
         left = max(int(math.floor(left * UPSAMPLE)), 0)
         right = min(int(math.ceil(right * UPSAMPLE)), data.shape[1] - 1)
-        mpline2.set_markersize(min(data.shape[1] / (right - left), 5))
+        mpdots.set_markersize(min(data.shape[1] / (right - left), 5))
         if left == right:
             freq = None
         else:
@@ -131,7 +131,7 @@ def _main(*args):
         nonlocal lineno
         lineno = int(numpy.floor(slider.val))
         mpline.set_ydata(plotscale(data[lineno]))
-        mpline2.set_ydata(plotscale(data[lineno, 0::UPSAMPLE]))
+        mpdots.set_ydata(plotscale(data[lineno, 0::UPSAMPLE]))
         subplot.relim()
         matplotlib.pyplot.draw()
         measure_frequency(None)
