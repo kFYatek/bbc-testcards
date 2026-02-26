@@ -2,9 +2,13 @@
 import enum
 import typing
 
+import PIL.Image
 import numpy
 import scipy.fft
 import scipy.signal
+
+if not 'get_flattened_data' in PIL.Image.Image.__dict__.keys():
+    PIL.Image.Image.get_flattened_data = PIL.Image.Image.getdata
 
 
 class ColorSpace(enum.Enum):
@@ -169,6 +173,49 @@ def resample_with_shift(data: numpy.array, new_size: int, axis: int = -1):
         data = resample_with_mirrors(data, new_size, axis)
         data = apply_shift(data, 0.5 - new_size / (2.0 * old_size), axis)
     return data
+
+
+def read_image(filename: str, infer_dimensions=None) -> tuple[numpy.ndarray, int]:
+    if filename.startswith('raw16:') or filename.startswith('rawfloat:'):
+        format, args = filename.split(':', 1)
+        if format == 'raw16':
+            dtype = numpy.uint16
+            range = 65535
+            bytes = 6
+        else:
+            dtype = numpy.float32
+            range = 1
+            bytes = 12
+        if '@' in args:
+            filename, args = args.split('@', 1)
+        else:
+            filename = '/dev/stdin'
+        with open(filename, 'rb') as f:
+            rawdata = f.read()
+        if 'x' in args:
+            width, height = (int(val) for val in args.split('x'))
+        else:
+            if infer_dimensions is None:
+                raise Exception('Cannot read image, unknown dimensions')
+            assert len(rawdata) % bytes == 0
+            width, height = infer_dimensions(len(rawdata) // bytes)
+        if dtype == numpy.float32:
+            data = numpy.ndarray((3, height, width), dtype=numpy.float32, buffer=rawdata).transpose(
+                (1, 2, 0))
+        else:
+            data = numpy.ndarray((height, width, 3), dtype=dtype, buffer=rawdata)
+    else:
+        im = PIL.Image.open(filename)
+        if im.mode == 'P':
+            im = im.convert(im.palette.mode)
+
+        data = numpy.array(im.get_flattened_data())
+        data = data.reshape((im.height, im.width, len(im.getbands())))
+        if ';16' in im.mode:
+            range = 65535
+        else:
+            range = 255
+    return data, range
 
 
 CARDS = [TestCardDefinition('Test Card X', 600, OriginalResolution.HD1080),
