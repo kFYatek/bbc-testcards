@@ -34,7 +34,7 @@ def _main(*args):
 
     outbuf = bytearray(2 * numpy.prod(data.shape))
     output = numpy.ndarray(data.shape, dtype=numpy.uint16, buffer=outbuf)
-    output[:, :, :] = numpy.minimum(numpy.maximum(data, 0.0), 65535.0)
+    output[:, :, :] = numpy.round(numpy.minimum(numpy.maximum(data, 0.0), 65535.0))
 
     subprocess.run(
         ['magick', '-size', f'{output.shape[1]}x{numpy.prod(output.shape[0])}', '-depth', '16',
