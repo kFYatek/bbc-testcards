@@ -58,10 +58,10 @@ Contents
   `SCALE=3` (square pixels). These are said to come from BBC's original data, so
   can be used as reference.
 
-`extract.vpy` and `convert.py` can operate in several different modes that can
-be configured through environment variables (which also means that `generate.sh`
-passes most of them through. I'm not documenting them, but feel free to look at
-the code (and its usages of `os.environ`) to see what can be customized.
+`extract.vpy` can operate in several different modes that can  be configured
+through environment variables (which also means that `generate.sh` passes most
+of them through. I'm not documenting them, but feel free to look at  the code
+(and its usages of `os.environ`) to see what can be customized.
 
 Why?
 ----

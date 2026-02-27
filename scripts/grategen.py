@@ -1,52 +1,58 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import argparse
 import subprocess
 import sys
 
 import numpy
 
 
-def _main():
-    SAMPLERATE = float(sys.argv[1])
-    FREQUENCY = float(sys.argv[2])
-    MINIMUM = float(sys.argv[3])
-    MAXIMUM = float(sys.argv[4])
-    try:
-        STARTPHASE = float(sys.argv[5])
-    except Exception:
-        STARTPHASE = 0.0
-    try:
-        STARTSHIFT = float(sys.argv[6])
-    except Exception:
-        STARTSHIFT = 0.0
-    try:
-        SLOPEFREQ = float(sys.argv[7])
-    except Exception:
-        SLOPEFREQ = FREQUENCY
+def _main(*args):
+    parser = argparse.ArgumentParser(
+        description='Generate a frequency grating as a 1024x128 image. The output is written as a PNG stream to the standard output.')
+    parser.add_argument('sample_rate', type=float,
+                        help='Sampling rate assumed for the target image.')
+    parser.add_argument('frequency', type=float, help='Frequency of the grating.')
+    parser.add_argument('minimum', type=float,
+                        help='Value for the lower tip of the grating. 0..1 range is assumed and scaled to 16-bit video range (4096..60160).')
+    parser.add_argument('maximum', type=float,
+                        help='Value for the lower tip of the grating. 0..1 range is assumed and scaled to 16-bit video range (4096..60160).')
+    parser.add_argument('start_phase', type=float, nargs='?', default=0.0,
+                        help='Reference phase of the grating, where 0 is origin of a cosine, and integers correspond to a full period.')
+    parser.add_argument('start_shift', type=float, nargs='?', default=0.0,
+                        help='Position of the reference phase. 0 corresponds to sample #512 (counting from 0).')
+    parser.add_argument('slope_freq', type=float, nargs='?',
+                        help='Frequency of a function from which slopes of the grating are cut. Must be equal or greater than the grating frequency. If greater, the tops of the grating will be flattened to form a semi-square wave.')
+    args = parser.parse_args(args)
 
-    PHASE_FIRST = STARTPHASE + 0.25 + ((-512.0 - STARTSHIFT) * FREQUENCY) / SAMPLERATE
-    PHASE_LAST = STARTPHASE + 0.25 + ((511.0 - STARTSHIFT) * FREQUENCY) / SAMPLERATE
+    PHASE_FIRST = args.start_phase + 0.25 + (
+            (-512.0 - args.start_shift) * args.frequency) / args.sample_rate
+    PHASE_LAST = args.start_phase + 0.25 + (
+            (511.0 - args.start_shift) * args.frequency) / args.sample_rate
 
-    args = numpy.linspace(PHASE_FIRST, PHASE_LAST, 1024) % 1.0
+    line = numpy.linspace(PHASE_FIRST, PHASE_LAST, 1024) % 1.0
 
-    if SLOPEFREQ < FREQUENCY:
+    if args.slope_freq is None:
+        pass
+    elif args.slope_freq < args.frequency:
         raise Exception('Invalid slope frequency')
-    elif SLOPEFREQ != FREQUENCY:
-        slope = FREQUENCY / SLOPEFREQ
-        for i in range(len(args)):
-            if args[i] < 0.25 * slope:
-                args[i] /= slope
-            elif args[i] < 0.5 - 0.25 * slope:
-                args[i] = 0.25
-            elif args[i] < 0.5 + 0.25 * slope:
-                args[i] = (args[i] - 0.5) / slope + 0.5
-            elif args[i] < 1.0 - 0.25 * slope:
-                args[i] = 0.75
+    elif args.slope_freq != args.frequency:
+        slope = args.frequency / args.slope_freq
+        for i in range(len(line)):
+            if line[i] < 0.25 * slope:
+                line[i] /= slope
+            elif line[i] < 0.5 - 0.25 * slope:
+                line[i] = 0.25
+            elif line[i] < 0.5 + 0.25 * slope:
+                line[i] = (line[i] - 0.5) / slope + 0.5
+            elif line[i] < 1.0 - 0.25 * slope:
+                line[i] = 0.75
             else:
-                args[i] = (args[i] - 1.0) / slope + 1.0
+                line[i] = (line[i] - 1.0) / slope + 1.0
 
-    line = numpy.sin(args * 2.0 * numpy.pi)
-    line = numpy.round(((line + 1.0) * 0.5 * (MAXIMUM - MINIMUM) + MINIMUM) * 56064.0 + 4096.0)
+    line = numpy.sin(line * 2.0 * numpy.pi)
+    line = numpy.round(
+        ((line + 1.0) * 0.5 * (args.maximum - args.minimum) + args.minimum) * 56064.0 + 4096.0)
 
     outbuf = bytearray(128 * 1024 * 2)
     output = numpy.ndarray((128, 1024), dtype=numpy.uint16, buffer=outbuf)
@@ -57,4 +63,4 @@ def _main():
 
 
 if __name__ == '__main__':
-    _main()
+    sys.exit(_main(*sys.argv[1:]))
