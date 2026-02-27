@@ -247,7 +247,7 @@ def load_and_process_image(file: str, colorspace: ColorSpace = None) -> numpy.nd
         else:
             assert data_range == 1
     else:
-        if data.shape[0] == 1:
+        if data.shape[2] == 1:
             data = data.repeat(3, axis=2)
         if data_range == 65535:
             data = (data - 4096.0) / 56064.0
