@@ -8,6 +8,7 @@ import numpy
 
 import common
 
+
 def _main(*args):
     parser = argparse.ArgumentParser(
         description='Resize an image by performing a Discrete Fourier Transform resampling.')
@@ -28,9 +29,10 @@ def _main(*args):
         assert data_range == 65535
 
     if args.width != data.shape[1]:
-        data = common.resample_with_shift(data, args.width, axis=1)
+        data = common.resample(data, args.width, shift_to_center=True, axis=1, pad_mode='symmetric')
     if args.height != data.shape[0]:
-        data = common.resample_with_shift(data, args.height, axis=0)
+        data = common.resample(data, args.height, shift_to_center=True, axis=0,
+                               pad_mode='symmetric')
 
     outbuf = bytearray(2 * numpy.prod(data.shape))
     output = numpy.ndarray(data.shape, dtype=numpy.uint16, buffer=outbuf)

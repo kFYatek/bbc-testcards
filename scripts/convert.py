@@ -57,12 +57,12 @@ def _main(*args):
         src_left += yuvdata.shape[2] / (2 * dimensions.scale_w) - 0.5
         src_top += yuvdata.shape[1] / (2 * dimensions.scale_h) - 0.5
 
-    yuvdata = common.apply_shift(yuvdata, src_left, axis=2)
-    yuvdata = common.apply_shift(yuvdata, src_top, axis=1)
+    yuvdata = common.resample(yuvdata, shift=src_left, axis=2, pad_mode='edge')
+    yuvdata = common.resample(yuvdata, shift=src_top, axis=1, pad_mode='edge')
 
     if dimensions is not None:
-        yuvdata = common.resample_with_mirrors(yuvdata, dimensions.scale_w, axis=2)
-        yuvdata = common.resample_with_mirrors(yuvdata, dimensions.scale_h, axis=1)
+        yuvdata = common.resample(yuvdata, dimensions.scale_w, axis=2, pad_mode='symmetric')
+        yuvdata = common.resample(yuvdata, dimensions.scale_h, axis=1, pad_mode='symmetric')
         if dimensions.crop_w != dimensions.scale_w:
             yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.crop_w) // 2:]
             yuvdata = yuvdata[:, :, :dimensions.crop_w]

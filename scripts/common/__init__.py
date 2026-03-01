@@ -4,8 +4,8 @@ import typing
 
 import PIL.Image
 import numpy
-import scipy.fft
-import scipy.signal
+
+from . import resamplers
 
 if not 'get_flattened_data' in PIL.Image.Image.__dict__.keys():
     PIL.Image.Image.get_flattened_data = PIL.Image.Image.getdata
@@ -124,55 +124,29 @@ def get_scaling_dimensions(scaling_mode: ScalingMode, original_resolution: Origi
             return ScalingDimensions(8640, 5902, 946, 378, 11.491875)
 
 
-def resample_with_mirrors(data: numpy.array, new_size: int, axis: int = -1):
+def resample(x: numpy.ndarray, num: int = None, shift: float = 0.0, shift_to_center: bool = False,
+             axis: int = 0, resampler=resamplers.fft_resampler, pad_mode=None,
+             **kwargs) -> numpy.ndarray:
     if axis < 0:
-        axis = len(data.shape) + axis
-    if new_size != data.shape[axis]:
-        data = numpy.swapaxes(data, 0, axis)
-        reversed = numpy.flip(data, axis=0)
-        data = numpy.concatenate([reversed, data, reversed], axis=0)
-        data = scipy.signal.resample(data, 3 * new_size, axis=0)
-        data = data[new_size:2 * new_size]
-        data = numpy.swapaxes(data, 0, axis)
-    return data
-
-
-def apply_shift(data: numpy.array, shift: float, axis: int = -1):
-    if axis < 0:
-        axis = len(data.shape) + axis
-    intshift = int(shift)
-    if intshift != 0:
-        data = numpy.roll(data, -intshift, axis=axis)
-        data = numpy.swapaxes(data, 0, axis)
-        if intshift > 0:
-            data[-intshift:] = data[-intshift - 1]
+        axis = len(x.shape) + axis
+    if num is None:
+        num = x.shape[axis]
+    if shift_to_center:
+        shift += 0.5 - num / (2.0 * x.shape[axis])
+    if num != x.shape[axis] or shift != 0.0:
+        if pad_mode is not None:
+            x = numpy.swapaxes(x, axis, len(x.shape) - 1)
+            x = numpy.pad(x, [(0, 0)] * (len(x.shape) - 1) + [(0, x.shape[-1])], mode=pad_mode,
+                          **kwargs)
+            x = resample(x=x, num=2 * num, shift=shift, shift_to_center=False, axis=-1,
+                         resampler=resampler, pad_mode=None)
+            x = x[..., :num]
+            x = numpy.swapaxes(x, axis, len(x.shape) - 1)
         else:
-            data[0:-intshift] = data[-intshift]
-        data = numpy.swapaxes(data, 0, axis)
-    shift = shift - intshift
-    if shift != 0:
-        data = numpy.swapaxes(data, len(data.shape) - 1, axis)
-        data = numpy.pad(data, [(0, 0)] * (len(data.shape) - 1) + [(1, 1)], mode='edge')
-        fft = scipy.fft.rfft(data, axis=-1)
-        fft *= numpy.exp(
-            numpy.array(range(fft.shape[-1])) * (2.0j * shift * numpy.pi / data.shape[-1]))
-        data = scipy.fft.irfft(fft, n=data.shape[-1], axis=-1)
-        data = numpy.delete(data, [0, -1], axis=-1)
-        data = numpy.swapaxes(data, len(data.shape) - 1, axis)
-    return data
-
-
-def resample_with_shift(data: numpy.array, new_size: int, axis: int = -1):
-    if axis < 0:
-        axis = len(data.shape) + axis
-    old_size = data.shape[axis]
-    if new_size < old_size:
-        data = apply_shift(data, old_size / (2.0 * new_size) - 0.5, axis)
-        data = resample_with_mirrors(data, new_size, axis)
-    elif new_size > old_size:
-        data = resample_with_mirrors(data, new_size, axis)
-        data = apply_shift(data, 0.5 - new_size / (2.0 * old_size), axis)
-    return data
+            if kwargs:
+                raise Exception('kwargs are not allowed when pad_mode is None')
+            x = resampler(x, num, shift, axis)
+    return x
 
 
 def read_image(filename: str, infer_dimensions=None) -> tuple[numpy.ndarray, int]:

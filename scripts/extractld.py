@@ -25,7 +25,8 @@ def mean_with_outliers(data, max_delta=0.25):
 
 
 def deghost(data, shift, weight):
-    return (data - common.apply_shift(data, shift) * weight) / (1.0 - weight)
+    return (data - common.resample(data, shift=shift, axis=-1, pad_mode='edge') * weight) / (
+            1.0 - weight)
 
 
 def half_freqs(data):
@@ -152,9 +153,9 @@ def _main(*args):
          [1.0, 2.028397565922921, 0.0]]), fullcolor)
 
     output = fullcolor[44:620, 174:1107]
-    output = scipy.signal.resample(output, 777, axis=1)
+    output = common.resample(output, 777, axis=1)
     output = numpy.pad(output, ((0, 0), (11, 0), (0, 0)), mode='edge')
-    output = common.apply_shift(output, 1.0 / 3.0, axis=1)
+    output = common.resample(output, shift=1.0 / 3.0, axis=1, pad_mode='edge')
     outbuf = bytearray(numpy.prod(output.shape) * 2)
     outarr = numpy.ndarray(output.shape, dtype=numpy.uint16, buffer=outbuf)
     outarr[:] = numpy.round(
