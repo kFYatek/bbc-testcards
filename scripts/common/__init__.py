@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import enum
 import typing
+import warnings
 
 import PIL.Image
 import numpy
@@ -136,9 +137,18 @@ def resample(x: numpy.ndarray, num: int = None, shift: float = 0.0, shift_to_cen
     if num != x.shape[axis] or shift != 0.0:
         if pad_mode is not None:
             x = numpy.swapaxes(x, axis, len(x.shape) - 1)
-            x = numpy.pad(x, [(0, 0)] * (len(x.shape) - 1) + [(0, x.shape[-1])], mode=pad_mode,
+            if pad_mode == 'reflect':
+                pad_width = max(x.shape[-1] - 2, 0)
+                newsize_float = num * (x.shape[-1] + pad_width) / x.shape[-1]
+                newsize = int(round(newsize_float))
+                if newsize != newsize_float:
+                    warnings.warn('resampling with reflect padding and non-divisible sizes')
+            else:
+                pad_width = x.shape[-1]
+                newsize = 2 * num
+            x = numpy.pad(x, [(0, 0)] * (len(x.shape) - 1) + [(0, pad_width)], mode=pad_mode,
                           **kwargs)
-            x = resample(x=x, num=2 * num, shift=shift, shift_to_center=False, axis=-1,
+            x = resample(x=x, num=newsize, shift=shift, shift_to_center=False, axis=-1,
                          resampler=resampler, pad_mode=None)
             x = x[..., :num]
             x = numpy.swapaxes(x, axis, len(x.shape) - 1)
