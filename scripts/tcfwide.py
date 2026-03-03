@@ -115,6 +115,22 @@ def _main():
     result = resample(result, 2 * 702, axis=1)
     result = result[:, 342:1062, :]
 
+    # ==== Frequency gratings ====
+    result[164:412, 557:563, :] = result[164:412, 558:564, :]
+    result = result.swapaxes(1, 2)
+    for i, freq in enumerate(numpy.array([12, 20, 24, 28, 32, 36]) / 81.0):
+        startline = 165 + i * 41
+        endline = startline + 41
+        if i == 0:
+            startline -= 1
+        elif i == 5:
+            endline += 1
+        line = numpy.cos(
+            (numpy.linspace(-20.76 * freq, 21.24 * freq, 43) % 1.0) * 2.0 * numpy.pi) * 0.4 + 0.5
+        result[startline:endline, :, 557:600] += (1.0 - result[
+            startline:endline, :, 557:600]) * line
+    result = result.swapaxes(1, 2)
+
     outbuf = bytearray(numpy.prod(result.shape) * 2)
     output = numpy.ndarray(result.shape, dtype=numpy.uint16, buffer=outbuf)
     output[:] = numpy.round(
