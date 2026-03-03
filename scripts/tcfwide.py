@@ -30,8 +30,6 @@ def _main():
     data[496:527, 337:452, :] = 32238
     data = (data - 4096) / (219.0 * 256.0)
     fix_arrow_tip(data)
-    # Shift to make the samples symmetrical
-    data = resample(data, shift=5.0 / 9.0, axis=1, pad_mode='edge')
 
     # ==== Copy the good parts ====
     result = numpy.zeros((576, 1024, 3))
@@ -94,8 +92,7 @@ def _main():
         topbar[0, 354:414, ch] = numpy.linspace(topbar[0, 353, ch], topbar[0, 414, ch], 62)[1:-1]
     topbar[29] = 2.0 * topbar[29] - 1.0
     orig_topbar = topbar
-    topbar = resample(topbar, 1034, shift_to_center=True, axis=1, pad_mode='symmetric')[
-        :, 5:1029, :]
+    topbar = resample(topbar, 1034, axis=1, pad_mode='symmetric')[:, 5:1029, :]
     topbar[:, 484:540, :] = orig_topbar[:, 356:412, :]
     topbar[:, :48, :] = 1.0
     topbar[:, -48:, :] = 1.0
@@ -105,7 +102,7 @@ def _main():
 
     # ==== Resample the result ====
     result = numpy.pad(result, ((0, 0), (1024, 1024), (0, 0)), 'reflect')
-    result = resample(result, shift=161.0 / 702.0, axis=1, pad_mode='edge')
+    result = resample(result, shift=551.0 / 702.0, axis=1, pad_mode='edge')
     result = result[:, 512:2560, :]
     result = resample(result, 2 * 702, axis=1)
     result = result[:, 342:1062, :]
