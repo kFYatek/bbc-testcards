@@ -146,8 +146,16 @@ def resample(x: numpy.ndarray, num: int = None, shift: float = 0.0, shift_to_cen
             else:
                 pad_width = x.shape[-1]
                 newsize = 2 * num
-            x = numpy.pad(x, [(0, 0)] * (len(x.shape) - 1) + [(0, pad_width)], mode=pad_mode,
+            if pad_mode == 'edge':
+                pad_l = pad_width // 2
+                pad_r = pad_width - pad_l
+            else:
+                pad_l = 0
+                pad_r = pad_width
+            x = numpy.pad(x, [(0, 0)] * (len(x.shape) - 1) + [(pad_l, pad_r)], mode=pad_mode,
                           **kwargs)
+            if pad_l > 0:
+                x = numpy.roll(x, -pad_l, axis=-1)
             x = resample(x=x, num=newsize, shift=shift, shift_to_center=False, axis=-1,
                          resampler=resampler, pad_mode=None)
             x = x[..., :num]
