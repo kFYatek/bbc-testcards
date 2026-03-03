@@ -158,9 +158,11 @@ lut709 = [(-16, -16), (0, 0), (16, 16), (17, 18), (18, 19), (19, 20), (20, 21), 
 
 lut = lut709
 
+# NOTE: Conversion to 4:4:4 involves resizing the chroma planes, hence Lanczos
+
 # Color space conversion
 if COLORCONV is common.ColorConversion.FORCE601TO709:
-    clip = vapoursynth.core.resize.Point(clip, format=vapoursynth.YUV444PS)
+    clip = vapoursynth.core.resize.Lanczos(clip, format=vapoursynth.YUV444PS)
     clip = vapoursynth.core.std.SetFrameProps(clip, _Matrix=vapoursynth.MATRIX_BT470_BG,
                                               _Transfer=vapoursynth.TRANSFER_BT601,
                                               _Primaries=vapoursynth.PRIMARIES_BT470_BG)
@@ -170,14 +172,14 @@ if COLORCONV is common.ColorConversion.FORCE601TO709:
 elif COLORCONV in (common.ColorConversion.FORCE601, common.ColorConversion.LINEAR) or (
         COLORCONV is common.ColorConversion.AUTO and CARD.mode is not common.OriginalResolution.HD1080):
     # It looks that the SD test cards have converted matrix, but not primaries
-    clip = vapoursynth.core.resize.Point(clip, format=vapoursynth.YUV444PS)
+    clip = vapoursynth.core.resize.Lanczos(clip, format=vapoursynth.YUV444PS)
     clip = vapoursynth.core.resize.Point(clip, matrix=vapoursynth.MATRIX_BT470_BG,
                                          transfer=vapoursynth.TRANSFER_BT709,
                                          primaries=vapoursynth.PRIMARIES_BT709)
     lut = lut601
 
 # Nonlinearity correction
-clip = vapoursynth.core.resize.Point(clip, format=vapoursynth.YUV444P16)
+clip = vapoursynth.core.resize.Lanczos(clip, format=vapoursynth.YUV444P16)
 yclip, uclip, vclip = clip.std.SplitPlanes()
 
 y_spline = scipy.interpolate.CubicSpline(numpy.array([inp for inp, outp in lut]) * 256.0,
