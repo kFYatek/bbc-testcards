@@ -123,3 +123,36 @@ class AliasedResampler:
             x = x[..., 0::k]
             x = x.swapaxes(len(x.shape) - 1, axis)
         return x
+
+
+class HybridResampler:
+    def __init__(self, backend_lo=CubicResampler(), backend_hi=fft_resampler, threshold=0.0078125,
+                 mean_size=3):
+        assert mean_size >= 2
+        super(HybridResampler, self).__init__()
+        self.backend_lo = backend_lo
+        self.backend_hi = backend_hi
+        self.threshold = threshold
+        self.mean_size = mean_size
+
+    def __call__(self, x: numpy.ndarray, num: int, shift: float = 0.0,
+                 axis: int = 0) -> numpy.ndarray:
+        if axis < 0:
+            axis = len(x.shape) + axis
+        oldsize = x.shape[axis]
+        if num == oldsize and shift == 0.0:
+            pass
+        else:
+            x = x.swapaxes(len(x.shape) - 1, axis)
+            resampled_hi = self.backend_hi(x, num, shift, -1)
+            resampled_lo = self.backend_lo(x, num, shift, -1)
+            means = numpy.zeros(x.shape)
+            for i in range(oldsize):
+                means[..., (i + self.mean_size // 2) % oldsize] = numpy.mean(
+                    numpy.roll(x, -i, axis=-1)[..., :self.mean_size], axis=-1)
+            lo_samples = numpy.float64(numpy.abs(x - means) < self.threshold)
+            lo_samples = LinearResampler()(lo_samples, num, shift, -1)
+            lo_samples = 0.5 - 0.5 * numpy.cos(lo_samples * numpy.pi)
+            x = lo_samples * resampled_lo + (1.0 - lo_samples) * resampled_hi
+            x = x.swapaxes(len(x.shape) - 1, axis)
+        return x
