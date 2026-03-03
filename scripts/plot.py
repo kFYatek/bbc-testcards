@@ -51,7 +51,7 @@ def _add_input_file(subplot, plotscale, input_file: str, input_colorspace: commo
                     break
 
     UPSAMPLE = 32
-    data = common.resample_with_mirrors(data, data.shape[1] * UPSAMPLE)
+    data = common.resample(data, data.shape[1] * UPSAMPLE, axis=-1, pad_mode='symmetric')
     xdata = numpy.array(range(data.shape[1])) / UPSAMPLE
 
     lineno = 0

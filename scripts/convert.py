@@ -25,6 +25,7 @@ def _main(*args):
     parser.add_argument('--scale', type=lambda x: common.ScalingMode(int(x)),
                         default=common.ScalingMode.NONE,
                         help=f'Scaling mode to use {list(common.ScalingMode)}.')
+    common.resamplers.add_argparse_arguments(parser)
     parser.add_argument('output_file', type=str,
                         help='Output file. May be any format supported by ImageMagick or raw16:[filename] (stdout by default).')
     parser.add_argument('--fullrange', action='store_true',
@@ -57,12 +58,16 @@ def _main(*args):
         src_left += yuvdata.shape[2] / (2 * dimensions.scale_w) - 0.5
         src_top += yuvdata.shape[1] / (2 * dimensions.scale_h) - 0.5
 
-    yuvdata = common.apply_shift(yuvdata, src_left, axis=2)
-    yuvdata = common.apply_shift(yuvdata, src_top, axis=1)
+    yuvdata = common.resample(yuvdata, shift=src_left, axis=2, resampler=args.h_resampler,
+                              pad_mode='edge')
+    yuvdata = common.resample(yuvdata, shift=src_top, axis=1, resampler=args.v_resampler,
+                              pad_mode='edge')
 
     if dimensions is not None:
-        yuvdata = common.resample_with_mirrors(yuvdata, dimensions.scale_w, axis=2)
-        yuvdata = common.resample_with_mirrors(yuvdata, dimensions.scale_h, axis=1)
+        yuvdata = common.resample(yuvdata, dimensions.scale_w, axis=2, resampler=args.h_resampler,
+                                  pad_mode='symmetric')
+        yuvdata = common.resample(yuvdata, dimensions.scale_h, axis=1, resampler=args.v_resampler,
+                                  pad_mode='symmetric')
         if dimensions.crop_w != dimensions.scale_w:
             yuvdata = yuvdata[:, :, (yuvdata.shape[2] - dimensions.crop_w) // 2:]
             yuvdata = yuvdata[:, :, :dimensions.crop_w]
