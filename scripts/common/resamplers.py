@@ -127,8 +127,8 @@ class AliasedResampler:
 
 class HybridResampler:
     def __init__(self, backend_lo=CubicResampler(), backend_hi=fft_resampler, threshold=0.0078125,
-                 mean_size=3):
-        assert mean_size >= 2
+                 mean_size=None):
+        assert mean_size is None or mean_size >= 2
         super(HybridResampler, self).__init__()
         self.backend_lo = backend_lo
         self.backend_hi = backend_hi
@@ -147,9 +147,15 @@ class HybridResampler:
             resampled_hi = self.backend_hi(x, num, shift, -1)
             resampled_lo = self.backend_lo(x, num, shift, -1)
             means = numpy.zeros(x.shape)
+            mean_size = self.mean_size
+            if mean_size is None:
+                if num >= oldsize:
+                    mean_size = 3
+                else:
+                    mean_size = int(round(3 * (oldsize / num)))
             for i in range(oldsize):
-                means[..., (i + self.mean_size // 2) % oldsize] = numpy.mean(
-                    numpy.roll(x, -i, axis=-1)[..., :self.mean_size], axis=-1)
+                means[..., (i + mean_size // 2) % oldsize] = numpy.mean(
+                    numpy.roll(x, -i, axis=-1)[..., :mean_size], axis=-1)
             lo_samples = numpy.float64(numpy.abs(x - means) < self.threshold)
             lo_samples = LinearResampler()(lo_samples, num, shift, -1)
             lo_samples = 0.5 - 0.5 * numpy.cos(lo_samples * numpy.pi)
