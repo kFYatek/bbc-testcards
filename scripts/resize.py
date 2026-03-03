@@ -10,8 +10,7 @@ import common
 
 
 def _main(*args):
-    parser = argparse.ArgumentParser(
-        description='Resize an image by performing a Discrete Fourier Transform resampling.')
+    parser = argparse.ArgumentParser(description='Resize an image.')
     parser.add_argument('input_file', type=str,
                         help='Input file. May be any format supported by PIL or raw{16|float}:[filename@]{width}x{height} - if no filename is specified for raw, it\'s read from stdin.')
     parser.add_argument('width', type=int, help='Target image width.')

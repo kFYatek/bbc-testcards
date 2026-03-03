@@ -44,7 +44,7 @@ env CARD=5 SCALE=1 SCALER=lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - |
 
 # Use Test Cards C and D from Richard T. Russell's GIFs
 for CARD in C D; do
-    "$SCRIPTDIR/fftresize.py" "$SCRIPTDIR/../Test Card $CARD.gif" 720 468 png:- \
+    "$SCRIPTDIR/resize.py" "$SCRIPTDIR/../Test Card $CARD.gif" 720 468 png:- \
     | magick png:- \
         -filter Point -resize 7200x468\! -filter Gaussian -resize 7200x378\! \
         -filter Point -resize 720x378\! \
@@ -63,7 +63,7 @@ env CARD=2 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
 | magick png:- -crop 1400x1080+260+0 -filter Lanczos -resize 844x595\! \
     -evaluate Pow 1.15 -evaluate Max 6.275% png:"$TMPIMAGE" -geometry +41+9 -composite \
     png:"$TMPIMAGE"
-"$SCRIPTDIR/fftresize.py" "$TMPIMAGE" 720 595 png:- \
+"$SCRIPTDIR/resize.py" "$TMPIMAGE" 720 595 png:- \
 | magick png:- \
     -filter Point -resize 7200x595\! -filter Gaussian -resize 7200x378\! \
     -filter Point -resize 720x378\! \
@@ -96,7 +96,7 @@ env CARD=9 SCALE=3 vspipe "$SCRIPTDIR/extract.vpy" - \
     +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" \
     -define png:color-type=2 "$OUTDIR/TestCardFElec-788.png"
 magick "$OUTDIR/TestCardFElec-788.png" -bordercolor '#100010001000' -border 118x0 rgb:- \
-| "$SCRIPTDIR/fftresize.py" raw16:1024x576 936 576 png:- \
+| "$SCRIPTDIR/resize.py" raw16:1024x576 936 576 png:- \
 | magick png:- \
     -crop 720x576+108+0 +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" \
     -define png:color-type=2 "$OUTDIR/TestCardFElec.png"
