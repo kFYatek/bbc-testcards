@@ -153,9 +153,9 @@ def _main(*args):
          [1.0, 2.028397565922921, 0.0]]), fullcolor)
 
     output = fullcolor[44:620, 174:1107]
+    output = common.resample(output, shift=0.4, axis=1, pad_mode='edge')
     output = common.resample(output, 777, axis=1)
     output = numpy.pad(output, ((0, 0), (11, 0), (0, 0)), mode='edge')
-    output = common.resample(output, shift=1.0 / 3.0, axis=1, pad_mode='edge')
     outbuf = bytearray(numpy.prod(output.shape) * 2)
     outarr = numpy.ndarray(output.shape, dtype=numpy.uint16, buffer=outbuf)
     outarr[:] = numpy.round(
