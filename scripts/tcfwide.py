@@ -100,6 +100,14 @@ def _main():
     result[0:29] = topbar[0:29]
     result[29] = 0.5 * (result[30] + topbar[29])
 
+    # ==== Fix the darkened grayscale block ====
+    result[220:240, 162:225, :] = result[219, 162:225, :]
+
+    # ==== Clear the frequency grating area
+    result[164, 800:864, :] = result[411, 800:864, :]
+    result[165:411, 800:864, :] = (result[411, 800:864, :] - result[411, 832, :]) / (
+            1.0 - result[411, 832, :])
+
     # ==== Resample the result ====
     result = numpy.pad(result, ((0, 0), (1024, 1024), (0, 0)), 'reflect')
     result = resample(result, shift=551.0 / 702.0, axis=1, pad_mode='edge')
