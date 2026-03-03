@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+import argparse
 import math
+import weakref
 
 import numpy
 import scipy.fft
@@ -162,3 +164,54 @@ class HybridResampler:
             x = lo_samples * resampled_lo + (1.0 - lo_samples) * resampled_hi
             x = x.swapaxes(len(x.shape) - 1, axis)
         return x
+
+
+RESAMPLERS = {'fft': lambda: fft_resampler,  #
+              'linear': LinearResampler,  #
+              'cubic': CubicResampler,  #
+              'aliased': AliasedResampler,  #
+              'hybrid': HybridResampler,  #
+              }
+
+
+def from_str(s: str):
+    return RESAMPLERS[s.lower()]()
+
+
+def add_argparse_arguments(parser: argparse.ArgumentParser, default='fft', axes='hv'):
+    class StoreAxisResamplerAction(argparse.Action):
+        def __init__(self, *args, **kwargs):
+            super(StoreAxisResamplerAction, self).__init__(*args, **kwargs)
+            self.fired_namespaces = set()
+
+        def __call__(self, parser, namespace, values, option_string=None):
+            resampler = from_str(values)
+            setattr(namespace, self.dest, resampler)
+            nsid = id(namespace)
+            self.fired_namespaces.add(nsid)
+            weakref.ref(namespace, lambda w: self.fired_namespaces.remove(nsid))
+
+    class StoreResamplerAction(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            for action in parser._actions:
+                if isinstance(action, StoreAxisResamplerAction) and id(
+                        namespace) in action.fired_namespaces:
+                    raise Exception(
+                        '--resampler and per-axis resampler options can\'t be used together')
+            resampler = from_str(values)
+            if len(axes) >= 2:
+                for action in parser._actions:
+                    if isinstance(action, StoreAxisResamplerAction):
+                        setattr(namespace, action.dest, resampler)
+            else:
+                setattr(namespace, self.dest, resampler)
+
+    default_obj = from_str(default)
+    parser.add_argument('--resampler', default=default_obj if len(axes) < 2 else None,
+                        action=StoreResamplerAction,
+                        help=f'Algorithm to use for resampling, supported values: {(*RESAMPLERS.keys(),)}, default: {default}')
+    if len(axes) >= 2:
+        for axis in axes:
+            parser.add_argument(f'--{axis}-resampler', default=default_obj,
+                                action=StoreAxisResamplerAction,
+                                help=f'Algorithm to use for resampling along the {axis.upper()} axis, supported values: {(*RESAMPLERS.keys(),)}, default: {default}')

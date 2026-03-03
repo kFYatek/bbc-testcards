@@ -18,6 +18,7 @@ def _main(*args):
     parser.add_argument('height', type=int, help='Target image height.')
     parser.add_argument('output_file', type=str,
                         help='Output file name. Will be passed through to ImageMagick.')
+    common.resamplers.add_argparse_arguments(parser)
     args = parser.parse_args(args)
 
     data, data_range = common.read_image(args.input_file)
@@ -29,10 +30,11 @@ def _main(*args):
         assert data_range == 65535
 
     if args.width != data.shape[1]:
-        data = common.resample(data, args.width, shift_to_center=True, axis=1, pad_mode='symmetric')
+        data = common.resample(data, args.width, shift_to_center=True, axis=1,
+                               resampler=args.h_resampler, pad_mode='symmetric')
     if args.height != data.shape[0]:
         data = common.resample(data, args.height, shift_to_center=True, axis=0,
-                               pad_mode='symmetric')
+                               resampler=args.v_resampler, pad_mode='symmetric')
 
     outbuf = bytearray(2 * numpy.prod(data.shape))
     output = numpy.ndarray(data.shape, dtype=numpy.uint16, buffer=outbuf)
