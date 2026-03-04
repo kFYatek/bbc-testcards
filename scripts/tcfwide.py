@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import argparse
+import os
 import subprocess
+import sys
 
 import numpy
 
@@ -18,12 +21,21 @@ def fix_arrow_tip(topbar):
     topbar[1, 386:402, :] = numpy.matvec(common.ColorSpace.BT601.to_rgb_matrix, yuvtip)
 
 
-def _main():
+def _main(*args):
+    parser = argparse.ArgumentParser(
+        description='Recreate the early widescreen version of Test Card F.')
+    parser.add_argument('tcf_input', type=str,
+                        help='File containing a cleanly restored version of the electronic Test Card F, sampled at 14.(769230) MHz (788x576). Will be passed through to ImageMagick.')
+    parser.add_argument('output_file', type=str,
+                        help='Output file. Will be passed through to ImageMagick.')
+    args = parser.parse_args(args)
+
     resampler = common.resamplers.HybridResampler(mean_size=3,
                                                   backend_hi=common.resamplers.AliasedResampler())
     resample = lambda *args, **kwargs: common.resample(*args, **kwargs, resampler=resampler)
-    data = subprocess.run(['magick', '../TestCardFElec-788.png', '-depth', '16', 'rgb:-'],
+    data = subprocess.run(['magick', args.tcf_input, '-depth', '16', 'rgb:-'],
                           stdout=subprocess.PIPE, check=True).stdout
+    assert len(data) == 788 * 576 * 3 * 2
     data = numpy.ndarray((576, 788, 3), dtype=numpy.uint16, buffer=data).copy()
     # Remove the logos
     data[447:475, 383:407, :] = 32238
@@ -137,8 +149,11 @@ def _main():
         numpy.minimum(numpy.maximum(result * (219.0 * 256.0) + 4096.0, 0.0), 65535.0))
     subprocess.run(
         ['magick', '-size', f'{output.shape[1]}x{numpy.prod(output.shape[0])}', '-depth', '16',
-         'rgb:-', '../TestCardFWide-new.png'], input=outbuf, check=True)
+         'rgb:-', '+profile', 'icc', '-profile',
+         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                      'ITU-601-625-video16-v4.icc'), '-define', 'png:color-type=2',
+         args.output_file], input=outbuf, check=True)
 
 
 if __name__ == "__main__":
-    _main()
+    sys.exit(_main(*sys.argv[1:]))
