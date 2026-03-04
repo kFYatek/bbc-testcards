@@ -101,7 +101,10 @@ magick "$OUTDIR/TestCardFElec-788.png" -bordercolor '#100010001000' -border 118x
     -crop 720x576+108+0 +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" \
     -define png:color-type=2 "$OUTDIR/TestCardFElec.png"
 
+# Recreation of the early widescreen version of Test Card F
+env CARD=11 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" rawfloat: png:"$TMPIMAGE"
+"$SCRIPTDIR/tcfwide.py" "$OUTDIR/TestCardFElec-788.png" png:"$TMPIMAGE" "$OUTDIR/TestCardFWide.png"
+
 # Electronic SD test cards
 env CARD=10 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" rawfloat: "$OUTDIR/TestCardJ.png"
-env CARD=11 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" rawfloat: "$OUTDIR/TestCardFWide.png"
 env CARD=12 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" rawfloat: "$OUTDIR/TestCardW.png"
