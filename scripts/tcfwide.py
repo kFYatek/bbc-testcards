@@ -26,6 +26,8 @@ def _main(*args):
         description='Recreate the early widescreen version of Test Card F.')
     parser.add_argument('tcf_input', type=str,
                         help='File containing a cleanly restored version of the electronic Test Card F, sampled at 14.(769230) MHz (788x576). Will be passed through to ImageMagick.')
+    parser.add_argument('tcfwide_input', type=str,
+                        help='File containing a lower-quality version of the Widescreen Test Card F, sampled at 13.5 MHz (720x576), to pull the "BBC Widescreen" logo from.')
     parser.add_argument('output_file', type=str,
                         help='Output file. Will be passed through to ImageMagick.')
     args = parser.parse_args(args)
@@ -33,10 +35,18 @@ def _main(*args):
     resampler = common.resamplers.HybridResampler(mean_size=3,
                                                   backend_hi=common.resamplers.AliasedResampler())
     resample = lambda *args, **kwargs: common.resample(*args, **kwargs, resampler=resampler)
+
     data = subprocess.run(['magick', args.tcf_input, '-depth', '16', 'rgb:-'],
                           stdout=subprocess.PIPE, check=True).stdout
     assert len(data) == 788 * 576 * 3 * 2
     data = numpy.ndarray((576, 788, 3), dtype=numpy.uint16, buffer=data).copy()
+
+    logodata = subprocess.run(['magick', args.tcfwide_input, '-depth', '16', 'rgb:-'],
+                              stdout=subprocess.PIPE, check=True).stdout
+    assert len(logodata) == 720 * 576 * 3 * 2
+    logodata = numpy.ndarray((576, 720, 3), dtype=numpy.uint16, buffer=logodata)
+    logodata = (logodata - 4096) / (219.0 * 256.0)
+
     # Remove the logos
     data[447:475, 383:407, :] = 32238
     data[496:527, 337:452, :] = 32238
@@ -142,6 +152,9 @@ def _main(*args):
         result[startline:endline, :, 557:600] += (1.0 - result[
             startline:endline, :, 557:600]) * line
     result = result.swapaxes(1, 2)
+
+    # ==== BBC Widescreen logo ====
+    result[496:527, 237:482, :] = logodata[496:527, 237:482, :]
 
     outbuf = bytearray(numpy.prod(result.shape) * 2)
     output = numpy.ndarray(result.shape, dtype=numpy.uint16, buffer=outbuf)
