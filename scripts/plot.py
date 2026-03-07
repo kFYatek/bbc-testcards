@@ -12,7 +12,7 @@ import common
 
 
 def _add_input_file(subplot, plotscale, input_file: str, input_colorspace: common.ColorSpace,
-                    output_colorspace: common.ColorSpace, channel: str, first: bool):
+                    output_colorspace: common.ColorSpace, channel: str, diff: bool, first: bool):
     data = common.load_and_process_image(input_file, input_colorspace)
     if channel == 'Y':
         data = data[:, :, 0]
@@ -53,6 +53,11 @@ def _add_input_file(subplot, plotscale, input_file: str, input_colorspace: commo
     UPSAMPLE = 32
     data = common.resample(data, data.shape[1] * UPSAMPLE, axis=-1, pad_mode='symmetric')
     xdata = numpy.array(range(data.shape[1])) / UPSAMPLE
+
+    if diff:
+        data_right = common.resample(data, shift=0.5, axis=-1, pad_mode='symmetric')
+        data_left = common.resample(data, shift=-0.5, axis=-1, pad_mode='symmetric')
+        data = (data_right - data_left) * UPSAMPLE
 
     lineno = 0
     mpline, = subplot.plot(xdata, plotscale(data[lineno]))
@@ -121,6 +126,7 @@ def _main(*args):
                         help='Value on the Y axis to use as black level.')
     parser.add_argument('--white', type=float, default=1.0,
                         help='Value on the Y axis to use as white level.')
+    parser.add_argument('--diff', action='store_true', help='Plot a differential of the signal.')
     args = parser.parse_args(args)
 
     def plotscale(value):
@@ -130,7 +136,9 @@ def _main(*args):
     subplot = fig.add_subplot()
     subplot.set_autoscalex_on(True)
     subplot.set_autoscaley_on(False)
-    if args.channel in ('U', 'V'):
+    if args.diff:
+        subplot.set_ybound(plotscale(-1.2), plotscale(1.2))
+    elif args.channel in ('U', 'V'):
         subplot.set_ybound(plotscale(-0.6), plotscale(0.6))
     else:
         subplot.set_ybound(plotscale(-0.1), plotscale(1.1))
@@ -143,7 +151,8 @@ def _main(*args):
         f_shape, f_xlim_changed, f_change_line = _add_input_file(subplot, plotscale, input_file,
                                                                  args.input_colorspace,
                                                                  args.output_colorspace,
-                                                                 args.channel, shape is None)
+                                                                 args.channel, args.diff,
+                                                                 shape is None)
         if shape is None:
             shape = f_shape
         elif shape != f_shape:
