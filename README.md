@@ -51,6 +51,17 @@ Contents
     * [eqcurve601.py](./scripts/eqcurve601.py), [eqcurve709.py](./eqcurve709.py) -
       quick and dirty scripts for generating the precorrection curves used in
       `extract.vpy`. Note that they have been manually tweaked afterwards.
+    * [extractld.py](./scripts/extractld.py) - processes `*.tbc` files created
+      by `ld-decode` into image files, in a way that is optimized for extracting
+      still images that are present for multiple frames.
+        * NOTE: In previous revisions of this repository, the `extractld.py`
+          script included some hardcoded tweaks to improve the quality of Test
+          Card F image extracted from the 1986 BBC Domesday Community South
+          disc. Those tweaks are no longer hardcoded. To achieve a result
+          equivalent to the old version, run: `scripts/extractld.py domesday.tbc
+          domesday.png 3000 23 --black-level 16221 --white-level 53274 --deghost
+          -4.5 0.1333333333333333 --u-scale 0.8333333333333333 --v-scale 0.875
+          --shift -12.027515649466466`
 * [TestCardFElec_BarneyWol.xcf](./TestCardFElec_BarneyWol.xcf) - XCF (GIMP) file
   containing features of the electronic version of Test Card F recovered from
   [Barney Wol's archived website](https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html)
