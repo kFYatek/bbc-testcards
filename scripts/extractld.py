@@ -46,7 +46,7 @@ def deqam(data):
 
 
 def depal(chroma):
-    burst_angles = numpy.angle(numpy.mean(chroma[:, :, 109:129], axis=-1))
+    burst_angles = numpy.angle(numpy.mean(chroma[:, :, 108:128], axis=-1))
     burst_phases = (burst_angles[:, 167] - burst_angles[:, 166] + numpy.pi) % (
             2.0 * numpy.pi) - numpy.pi
     burst_mask = abs(burst_phases) < 0.4968 * numpy.pi
@@ -69,7 +69,7 @@ def deinterlace(data):
 
 def _main(*args):
     parser = argparse.ArgumentParser(
-        description='Decode a still image from multiple frames of TBC information decoded using ld-decode. For now, only supports PAL CAV Laserdisc sources.')
+        description='Decode a still image from multiple frames of TBC information decoded using ld-decode. For now, only supports CAV Laserdisc sources.')
     parser.add_argument('input_file', type=str,
                         help='TBC file to read data from. A matching *.json file is required too.')
     parser.add_argument('output_file', type=str,
@@ -88,6 +88,7 @@ def _main(*args):
     parser.add_argument('--v-scale', type=float, help='Multiplier for the V color component')
     parser.add_argument('--shift', type=float,
                         help='Number of samples (at 4fSC, possibly fractional) to shift the image by')
+    parser.add_argument('--hue-shift', type=float, help='Shift, in radians, of the color hue')
     args = parser.parse_args(args)
 
     with open(args.input_file + '.json') as f:
@@ -96,11 +97,12 @@ def _main(*args):
     if metadata['videoParameters']['system'] == 'PAL':
         assert metadata['videoParameters']['fieldWidth'] == 1135
         assert metadata['videoParameters']['fieldHeight'] == 313
+        minframes = 4
     else:
         assert metadata['videoParameters']['system'] == 'NTSC'
         assert metadata['videoParameters']['fieldWidth'] == 910
         assert metadata['videoParameters']['fieldHeight'] == 263
-        raise Exception('NTSC is not yet supported')
+        minframes = 2
 
     input_file_first_field = 0
 
@@ -139,8 +141,9 @@ def _main(*args):
                           metadata['videoParameters']['fieldWidth']), dtype=numpy.uint16,
                          buffer=data)
 
-    if data.shape[0] < 4:
-        raise Exception('This script requires at least 4 frames to operate')
+    if data.shape[0] < minframes:
+        raise Exception(
+            f"This script requires at least {minframes} frames to operate in {metadata['videoParameters']['system']} mode")
 
     if args.black_level is not None:
         black_level = args.black_level
@@ -156,19 +159,32 @@ def _main(*args):
     if args.deghost is not None:
         inp = deghost(inp, *args.deghost)
 
-    data = numpy.ndarray((4, inp.shape[1], inp.shape[2]))
-    for i in range(4):
-        data[i, :] = mean_with_outliers(inp[i::4])
+    data = numpy.ndarray((minframes, inp.shape[1], inp.shape[2]))
+    for i in range(minframes):
+        data[i, :] = mean_with_outliers(inp[i::minframes])
 
     luma = numpy.mean(data, axis=0)
 
     chroma = deqam(data - luma)
-    chroma = depal(chroma)
-    chroma = numpy.mean(chroma, axis=0)
+    if metadata['videoParameters']['system'] == 'PAL':
+        chroma = depal(chroma)
+    else:
+        burst_angles = numpy.angle(numpy.mean(chroma[:, :, 82:102], axis=-1))
+        chroma = chroma.transpose((2, 0, 1))
+        chroma = chroma * numpy.exp(1.0j * (numpy.pi - burst_angles))
+        chroma = chroma.transpose((1, 2, 0))
 
+    chroma = numpy.mean(chroma, axis=0)
     luma = deinterlace(luma)
     chroma = deinterlace(chroma)
-    chroma *= (3.0 / (14.0 * numpy.abs(numpy.mean(chroma[44:617, 109:129]))))
+
+    if metadata['videoParameters']['system'] == 'PAL':
+        chroma *= (3.0 / (14.0 * numpy.abs(numpy.mean(chroma[48:616, 108:128]))))
+    else:
+        chroma *= (1.0 / (5.0 * numpy.abs(numpy.mean(chroma[46:516, 82:102]))))
+
+    if args.hue_shift is not None:
+        chroma *= numpy.exp(1.0j * args.hue_shift)
 
     fullcolor = numpy.ndarray((luma.shape[0], luma.shape[1], 3))
     fullcolor[:, :, 0] = luma
@@ -179,14 +195,25 @@ def _main(*args):
         [[1.0, 0.0, 1.1402508551881414], [1.0, -0.3939307027516405, -0.5808092090310976],
          [1.0, 2.028397565922921, 0.0]]), fullcolor)
 
-    output = fullcolor[44:620]
-    output = numpy.pad(output, ((0, 0), (366, 365), (0, 0)), mode='edge')
-    shift = 539.21902144097223
-    if args.shift:
-        shift += args.shift
-    output = common.resample(output, shift=shift, axis=1)
-    output = common.resample(output, 1554, axis=1)
-    output = output[:, :788, :]
+    if metadata['videoParameters']['system'] == 'PAL':
+        output = fullcolor[44:620]
+        output = numpy.pad(output, ((0, 0), (366, 365), (0, 0)), mode='edge')
+        shift = 539.21902144097223
+        if args.shift:
+            shift += args.shift
+        output = common.resample(output, shift=shift, axis=1)
+        output = common.resample(output, 1554, axis=1)
+        output = output[:, :788, :]
+    else:
+        output = fullcolor[38:524]
+        output = numpy.pad(output, ((0, 0), (338, 338), (0, 0)), mode='edge')
+        shift = 467.31079573347614
+        if args.shift:
+            shift += args.shift
+        output = common.resample(output, shift=shift, axis=1)
+        output = common.resample(output, 1358, axis=1)
+        output = output[:, :654, :]
+
     outbuf = bytearray(numpy.prod(output.shape) * 2)
     outarr = numpy.ndarray(output.shape, dtype=numpy.uint16, buffer=outbuf)
     outarr[:] = numpy.round(
@@ -196,7 +223,9 @@ def _main(*args):
         ['magick', '-size', f'{output.shape[1]}x{numpy.prod(output.shape[0])}', '-depth', '16',
          'rgb:-', '+profile', 'icc', '-profile',
          os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                      'ITU-601-625-video16-v4.icc'), args.output_file], input=outbuf, check=True)
+                      'ITU-601-625-video16-v4.icc' if metadata['videoParameters'][
+                                                          'system'] == 'PAL' else 'ITU-601-525-video16-v4.icc'),
+         args.output_file], input=outbuf, check=True)
 
 
 if __name__ == '__main__':
