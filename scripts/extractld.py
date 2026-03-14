@@ -89,6 +89,8 @@ def _main(*args):
     parser.add_argument('--shift', type=float,
                         help='Number of samples (at 4fSC, possibly fractional) to shift the image by')
     parser.add_argument('--hue-shift', type=float, help='Shift, in radians, of the color hue')
+    parser.add_argument('--bt601', action='store_true',
+                        help='Use BT.601 sampling rate on output instead of square pixels')
     args = parser.parse_args(args)
 
     with open(args.input_file + '.json') as f:
@@ -195,24 +197,37 @@ def _main(*args):
         [[1.0, 0.0, 1.1402508551881414], [1.0, -0.3939307027516405, -0.5808092090310976],
          [1.0, 2.028397565922921, 0.0]]), fullcolor)
 
+    if args.shift:
+        shift = args.shift
+    else:
+        shift = 0.0
+
     if metadata['videoParameters']['system'] == 'PAL':
         output = fullcolor[44:620]
-        output = numpy.pad(output, ((0, 0), (366, 365), (0, 0)), mode='edge')
-        shift = 539.21902144097223
-        if args.shift:
-            shift += args.shift
-        output = common.resample(output, shift=shift, axis=1)
-        output = common.resample(output, 1554, axis=1)
-        output = output[:, :788, :]
+        if args.bt601:
+            output = numpy.pad(output, ((0, 0), (67, 67), (0, 0)), mode='edge')
+            shift += 240.40375555555556
+            output = common.resample(output, shift=shift, axis=1)
+            output = common.resample(output, 966, axis=1)
+            output = output[:, :720, :]
+        else:
+            output = numpy.pad(output, ((0, 0), (366, 365), (0, 0)), mode='edge')
+            shift += 539.21902144097223
+            output = common.resample(output, shift=shift, axis=1)
+            output = common.resample(output, 1554, axis=1)
+            output = output[:, :788, :]
     else:
         output = fullcolor[38:524]
-        output = numpy.pad(output, ((0, 0), (338, 338), (0, 0)), mode='edge')
-        shift = 467.31079573347614
-        if args.shift:
-            shift += args.shift
-        output = common.resample(output, shift=shift, axis=1)
-        output = common.resample(output, 1358, axis=1)
-        output = output[:, :654, :]
+        if args.bt601:
+            output = common.resample(output, shift=shift, axis=1)
+            output = common.resample(output, 858, axis=1)
+            output = output[:, 122:842, :]
+        else:
+            output = numpy.pad(output, ((0, 0), (338, 338), (0, 0)), mode='edge')
+            shift += 467.31079573347614
+            output = common.resample(output, shift=shift, axis=1)
+            output = common.resample(output, 1358, axis=1)
+            output = output[:, :654, :]
 
     outbuf = bytearray(numpy.prod(output.shape) * 2)
     outarr = numpy.ndarray(output.shape, dtype=numpy.uint16, buffer=outbuf)
