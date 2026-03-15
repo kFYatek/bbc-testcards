@@ -10,8 +10,8 @@ env CARD=0 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" --output-
 env CARD=13 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" --output-colorspace 709 rawfloat: "$OUTDIR/TestCard3D.png"
 
 # Mechanical test cards, don't scale for now
-env CARD=1 COLORCONV=4 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" --output-colorspace 1 rawfloat: raw16: | magick -size 1920x1080 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../Linear-gray-video16-v4.icc" -define png:color-type=0 "$OUTDIR/TelevisionEye.png"
-env CARD=3 COLORCONV=4 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" --output-colorspace 1 rawfloat: raw16: | magick -size 1920x1080 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../Linear-gray-video16-v4.icc" -define png:color-type=0 "$OUTDIR/CircleAndLine.png"
+env CARD=1 COLORCONV=4 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" --output-colorspace 1 rawfloat: raw16: | magick -size 1920x1080 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../icc/Linear-gray-video16-v4.icc" -define png:color-type=0 "$OUTDIR/TelevisionEye.png"
+env CARD=3 COLORCONV=4 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" --output-colorspace 1 rawfloat: raw16: | magick -size 1920x1080 -depth 16 rgb:- +profile icc -profile "$SCRIPTDIR/../icc/Linear-gray-video16-v4.icc" -define png:color-type=0 "$OUTDIR/CircleAndLine.png"
 
 # Test Cards A and B are high-res reproductions, just scale them down
 env CARD=4 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" --output-colorspace 1 rawfloat: "$OUTDIR/TestCardA.png"

@@ -163,7 +163,7 @@ def _main(*args):
     subprocess.run(
         ['magick', '-size', f'{output.shape[1]}x{numpy.prod(output.shape[0])}', '-depth', '16',
          'rgb:-', '+profile', 'icc', '-profile',
-         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'icc',
                       'ITU-601-625-video16-v4.icc'), '-define', 'png:color-type=2',
          args.output_file], input=outbuf, check=True)
 

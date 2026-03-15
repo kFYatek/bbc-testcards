@@ -121,7 +121,7 @@ def _main(*args):
         if iccfile is not None:
             command += ['+profile', 'icc', '-profile',
                         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                     iccfile)]
+                                     'icc', iccfile)]
         if args.output_colorspace is common.ColorSpace.GRAYSCALE:
             command += ['-define', 'png:color-type=0']
         else:

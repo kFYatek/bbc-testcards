@@ -26,7 +26,7 @@ env CARD=1 COLORCONV=4 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
     -crop 448x1064+736+8 -bordercolor '#eb00eb00eb00' -border 100x8 rgb:- \
 | magick -size 648x1080 -depth 16 rgb: \
     -filter Lanczos -resize 42x1080\! -crop 30x1080+6+0 -filter Cubic -resize 30x70\! \
-    +profile icc -profile "$SCRIPTDIR/../Linear-gray-video16-v4.icc" \
+    +profile icc -profile "$SCRIPTDIR/../icc/Linear-gray-video16-v4.icc" \
     -define png:color-type=0 "$OUTDIR/TelevisionEye.png"
 
 env CARD=3 COLORCONV=4 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
@@ -35,7 +35,7 @@ env CARD=3 COLORCONV=4 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
     -crop 1420x1012+250+58 -bordercolor '#eb00eb00eb00' -border 10x1174 rgb:- \
 | magick -size 1440x3360 -depth 16 rgb:- \
     -filter Lanczos -resize 30x3360\! -filter Cubic -resize 30x70\! \
-    +profile icc -profile "$SCRIPTDIR/../Linear-gray-video16-v4.icc" \
+    +profile icc -profile "$SCRIPTDIR/../icc/Linear-gray-video16-v4.icc" \
     -define png:color-type=0 "$OUTDIR/CircleAndLine.png"
 
 # Test Cards A and B are high-res reproductions, just scale them down
@@ -48,7 +48,7 @@ for CARD in C D; do
     | magick png:- \
         -filter Point -resize 7200x468\! -filter Gaussian -resize 7200x378\! \
         -filter Point -resize 720x378\! \
-        +profile icc -profile "$SCRIPTDIR/../ITU-1886-gray-video16-v4.icc" \
+        +profile icc -profile "$SCRIPTDIR/../icc/ITU-1886-gray-video16-v4.icc" \
         -define png:color-type=0 "$OUTDIR/TestCard$CARD.png"
 done
 
@@ -67,7 +67,7 @@ env CARD=2 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
 | magick png:- \
     -filter Point -resize 7200x595\! -filter Gaussian -resize 7200x378\! \
     -filter Point -resize 720x378\! \
-    +profile icc -profile "$SCRIPTDIR/../ITU-1886-gray-video16-v4.icc" \
+    +profile icc -profile "$SCRIPTDIR/../icc/ITU-1886-gray-video16-v4.icc" \
     -define png:color-type=0 "$OUTDIR/TuningSignal.png"
 
 # Recreation of the optical Test Card F
@@ -84,7 +84,7 @@ magick png:"$TMPIMAGE" -crop 720x14+0+6 -filter Box -resize 720x1\! -filter Box 
     png:"$TMPIMAGE"
 "$SCRIPTDIR/tcfopt_firstline.py" \
 | magick -size 720x1 -depth 16 gray:- png:"$TMPIMAGE" -append png:"$CARDIMAGE" -append \
-    +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" \
+    +profile icc -profile "$SCRIPTDIR/../icc/ITU-601-625-video16-v4.icc" \
     -define png:color-type=2 "$OUTDIR/TestCardFOpt.png"
 
 # Recreation of the electronic Test Card F
@@ -93,12 +93,12 @@ env CARD=9 SCALE=3 vspipe "$SCRIPTDIR/extract.vpy" - \
 | magick png:- -define png:color-type=2 \
     "$SCRIPTDIR/../TestCardFElec_reconstruction.png" -composite png:- \
 | magick png:- \
-    +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" \
+    +profile icc -profile "$SCRIPTDIR/../icc/ITU-601-625-video16-v4.icc" \
     -define png:color-type=2 "$OUTDIR/TestCardFElec-788.png"
 magick "$OUTDIR/TestCardFElec-788.png" -bordercolor '#100010001000' -border 118x0 rgb:- \
 | "$SCRIPTDIR/resize.py" raw16:1024x576 936 576 png:- --resampler hybrid \
 | magick png:- \
-    -crop 720x576+108+0 +profile icc -profile "$SCRIPTDIR/../ITU-601-625-video16-v4.icc" \
+    -crop 720x576+108+0 +profile icc -profile "$SCRIPTDIR/../icc/ITU-601-625-video16-v4.icc" \
     -define png:color-type=2 "$OUTDIR/TestCardFElec.png"
 
 # Recreation of the early widescreen version of Test Card F
