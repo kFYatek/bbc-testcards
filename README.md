@@ -62,9 +62,9 @@ Contents
           domesday.png 3000 23 --black-level 16221 --white-level 53274 --deghost
           -4.5 0.1333333333333333 --u-scale 0.8333333333333333 --v-scale 0.875
           --shift -12.027515649466466`
-* [TestCardFElec_BarneyWol.xcf](./TestCardFElec_BarneyWol.xcf) - XCF (GIMP) file
-  containing features of the electronic version of Test Card F recovered from
-  [Barney Wol's archived website](https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html)
+* [TestCardFElec_BarneyWol.xcf](./sources/TestCardFElec_BarneyWol.xcf) - XCF
+  (GIMP) file containing features of the electronic version of Test Card F
+  recovered from [Barney Wol's archived website](https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html)
   and arranged on a canvas that matches the output of my scripts when set to
   `SCALE=3` (square pixels). These are said to come from BBC's original data, so
   can be used as reference.

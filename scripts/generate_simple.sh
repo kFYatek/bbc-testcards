@@ -19,7 +19,7 @@ env CARD=1 COLORCONV=4 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
     -crop 448x1064+736+8 -bordercolor '#eb00eb00eb00' -border 100x8 rgb:- \
 | magick -size 648x1080 -depth 16 rgb: \
     -filter Lanczos -resize 42x1080\! -crop 30x1080+6+0 -filter Cubic -resize 30x70\! \
-    +profile icc -profile "$SCRIPTDIR/../Linear-gray-video16-v4.icc" \
+    +profile icc -profile "$SCRIPTDIR/../icc/Linear-gray-video16-v4.icc" \
     -define png:color-type=0 "$OUTDIR/TelevisionEye.png"
 
 env CARD=3 COLORCONV=4 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
@@ -28,7 +28,7 @@ env CARD=3 COLORCONV=4 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
     -crop 1420x1012+250+58 -bordercolor '#eb00eb00eb00' -border 10x1174 rgb:- \
 | magick -size 1440x3360 -depth 16 rgb:- \
     -filter Lanczos -resize 30x3360\! -filter Cubic -resize 30x70\! \
-    +profile icc -profile "$SCRIPTDIR/../Linear-gray-video16-v4.icc" \
+    +profile icc -profile "$SCRIPTDIR/../icc/Linear-gray-video16-v4.icc" \
     -define png:color-type=0 "$OUTDIR/CircleAndLine.png"
 
 # Test Cards A and B are high-res reproductions, just scale them down
