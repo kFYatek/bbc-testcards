@@ -45,7 +45,7 @@ class ScalingMode(enum.Enum):
     VERTICAL = 1
     CANONICAL = 2
     SQUARE_PIXELS = 3
-    PAL_4FSC = 4
+    FSC_TIMES_4 = 4
 
 
 class ColorConversion(enum.Enum):
@@ -62,6 +62,8 @@ class OriginalResolution(enum.Enum):
     PAL43 = enum.auto()
     SYSA43 = enum.auto()
     SYSA54 = enum.auto()
+    NTSC169 = enum.auto()
+    NTSC43 = enum.auto()
 
 
 class TestCardDefinition(typing.NamedTuple):
@@ -96,6 +98,10 @@ def get_scaling_dimensions(scaling_mode: ScalingMode, original_resolution: Origi
             return ScalingDimensions(1920, 1920, 1478, 378, 17.944615384615386)
         elif original_resolution is OriginalResolution.SYSA54:
             return ScalingDimensions(1920, 1920, 1386, 378, 16.823076923076922)
+        elif original_resolution is OriginalResolution.NTSC169:
+            return ScalingDimensions(2560, 2560, 1938, 486, 36.32541517763296)
+        elif original_resolution is OriginalResolution.NTSC43:
+            return ScalingDimensions(1920, 1920, 1454, 486, 27.24406138322472)
     elif scaling_mode is ScalingMode.CANONICAL:
         if original_resolution is OriginalResolution.PAL169:
             return ScalingDimensions(2560, 936, 720, 576, 13.5)
@@ -105,6 +111,10 @@ def get_scaling_dimensions(scaling_mode: ScalingMode, original_resolution: Origi
             return ScalingDimensions(1920, 936, 720, 378, 8.748)
         elif original_resolution is OriginalResolution.SYSA54:
             return ScalingDimensions(1400, 728, 720, 378, 8.748)
+        elif original_resolution is OriginalResolution.NTSC169:
+            return ScalingDimensions(25600, 9514, 720, 486, 13.5)
+        elif original_resolution is OriginalResolution.NTSC43:
+            return ScalingDimensions(19200, 9514, 720, 486, 13.5)
     elif scaling_mode is ScalingMode.SQUARE_PIXELS:
         if original_resolution is OriginalResolution.PAL169:
             return ScalingDimensions(1980, 1056, 1052, 576, 19.692307692307693)
@@ -114,7 +124,11 @@ def get_scaling_dimensions(scaling_mode: ScalingMode, original_resolution: Origi
             return ScalingDimensions(1480, 518, 518, 378, 6.280615384615385)
         elif original_resolution is OriginalResolution.SYSA54:
             return ScalingDimensions(1400, 490, 486, 378, 5.888076923076923)
-    elif scaling_mode is ScalingMode.PAL_4FSC:
+        elif original_resolution is OriginalResolution.NTSC169:
+            return ScalingDimensions(1960, 882, 872, 486, 16.346436829934834)
+        elif original_resolution is OriginalResolution.NTSC43:
+            return ScalingDimensions(1480, 666, 654, 486, 12.259827622451125)
+    elif scaling_mode is ScalingMode.FSC_TIMES_4:
         if original_resolution is OriginalResolution.PAL169:
             return ScalingDimensions(12288, 5902, 946, 576, 17.734375)
         elif original_resolution is OriginalResolution.PAL43:
@@ -123,6 +137,10 @@ def get_scaling_dimensions(scaling_mode: ScalingMode, original_resolution: Origi
             return ScalingDimensions(9216, 5902, 946, 378, 11.491875)
         elif original_resolution is OriginalResolution.SYSA54:
             return ScalingDimensions(8640, 5902, 946, 378, 11.491875)
+        elif original_resolution is OriginalResolution.NTSC169:
+            return ScalingDimensions(2816, 1110, 764, 486, 14.318181818181818)
+        elif original_resolution is OriginalResolution.NTSC43:
+            return ScalingDimensions(2112, 1110, 764, 486, 14.318181818181818)
 
 
 def resample(x: numpy.ndarray, num: int = None, shift: float = 0.0, shift_to_center: bool = False,
@@ -216,6 +234,10 @@ def load_and_process_image(file: str, colorspace: ColorSpace = None) -> numpy.nd
             return samples // 1080, 1080
         elif samples % 576 == 0 and samples // 576 >= 720:
             return samples // 576, 576
+        elif samples % 486 == 0 and samples // 486 >= 654:
+            return samples // 486, 486
+        elif samples % 480 == 0 and samples // 480 >= 654:
+            return samples // 480, 480
         elif samples % 378 == 0 and samples // 378 >= 486:
             return samples // 378, 378
         raise Exception('Unable to infer image dimensions')

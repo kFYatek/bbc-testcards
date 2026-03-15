@@ -34,6 +34,8 @@ def _add_input_file(subplot, plotscale, input_file: str, input_colorspace: commo
 
     if data.shape[0] <= 405:
         orig_resolution = common.OriginalResolution.SYSA43
+    elif data.shape[0] <= 525:
+        orig_resolution = common.OriginalResolution.NTSC43
     elif data.shape[0] <= 625:
         orig_resolution = common.OriginalResolution.PAL43
     elif data.shape[0] == 1080:
