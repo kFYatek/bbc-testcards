@@ -44,7 +44,8 @@ env CARD=5 SCALE=1 SCALER=lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - |
 
 # Use Test Cards C and D from Richard T. Russell's GIFs
 for CARD in C D; do
-    "$SCRIPTDIR/resize.py" "$SCRIPTDIR/../Test Card $CARD.gif" 720 468 png:- --resampler hybrid \
+    "$SCRIPTDIR/resize.py" "$SCRIPTDIR/../sources/Test Card $CARD.gif" 720 468 png:- \
+        --resampler hybrid \
     | magick png:- \
         -filter Point -resize 7200x468\! -filter Gaussian -resize 7200x378\! \
         -filter Point -resize 720x378\! \
@@ -55,7 +56,7 @@ done
 # Compose the Tuning signal from both sources
 TMPIMAGE="$(mktemp)"
 TMPFILES="$TMPFILES $TMPIMAGE"
-magick "$SCRIPTDIR/../d0bfa1fd2a9191224e10dafe9d9fc321dc254d80.jpg" \
+magick "$SCRIPTDIR/../sources/d0bfa1fd2a9191224e10dafe9d9fc321dc254d80.jpg" \
     -type GrayScaleAlpha -fuzz '3%' -fill none -draw "color 3,2 floodfill" \
     -crop 764x576+2+0 png:"$TMPIMAGE"
 env CARD=2 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
@@ -91,7 +92,7 @@ magick png:"$TMPIMAGE" -crop 720x14+0+6 -filter Box -resize 720x1\! -filter Box 
 env CARD=9 SCALE=3 vspipe "$SCRIPTDIR/extract.vpy" - \
 | "$SCRIPTDIR/convert.py" rawfloat: png:- \
 | magick png:- -define png:color-type=2 \
-    "$SCRIPTDIR/../TestCardFElec_reconstruction.png" -composite png:- \
+    "$SCRIPTDIR/../sources/TestCardFElec_reconstruction.png" -composite png:- \
 | magick png:- \
     +profile icc -profile "$SCRIPTDIR/../icc/ITU-601-625-video16-v4.icc" \
     -define png:color-type=2 "$OUTDIR/TestCardFElec-788.png"

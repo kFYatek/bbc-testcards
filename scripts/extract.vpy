@@ -12,7 +12,8 @@ import common
 del sys.path[0]
 os.chdir(os.pardir)
 
-clip = vapoursynth.core.bs.VideoSource(source='This Is BBC HD_20130326_0120.ts')
+clip = vapoursynth.core.bs.VideoSource(
+    source=os.path.join('sources', 'This Is BBC HD_20130326_0120.ts'))
 
 CARD = common.CARDS[int(os.environ['CARD'])]
 CLAMP = bool(int(os.environ.get('CLAMP') or '0'))

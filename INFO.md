@@ -188,7 +188,8 @@ available pictures of the originals.
 * Closeups:
   https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html -
   apparently sampled at square pixels (14769230.(769230) Hz) - recovered and
-  arranged on [TestCardFElec_BarneyWol.xcf](./TestCardFElec_BarneyWol.xcf)
+  arranged on
+  [TestCardFElec_BarneyWol.xcf](./sources/TestCardFElec_BarneyWol.xcf)
 * Note: `src_left` is deliberately set to offset the center by half-pixel,
   to match the closeups mentioned above.
 * The very top and very bottom lines are seemingly supposed to be empty.
