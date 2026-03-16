@@ -1,5 +1,4 @@
-BBC Test Card Restoration Project
-=================================
+# BBC Test Card Restoration Project
 
 This is a project dedicated to restoring/recreating test card images
 historically used by the BBC, as close to the originals as possible - so that
@@ -14,13 +13,88 @@ been shown. This project aims to both recover the original SD images from that
 HD broadcast as accurately as possible (this part is largely done), and manually
 edit them to further remove remaining artifacts (pending, on hold).
 
-**NOTE:** This repository does not contain actual test card images (aside from
-incomplete parts of Test Card F - at least for now), only scripts for processing
-data from the transport stream recording. See [INFO.md](./INFO.md) for where to
-find it.
+## How to use this project
 
-Contents
---------
+This repository does not contain actual test card images (aside from incomplete
+parts of Test Card F - at least for now), only scripts for processing data from
+the transport stream recording.
+
+### Prerequisites
+
+To run the scripts, you will need:
+
+* A computer running Linux or macOS. Other Unix-like systems might work too, but
+  have not been tested. Windows will not work natively. Use WSL or a virtual
+  machine to run Linux if you're on Windows.
+* The following software:
+    * [Python](https://www.python.org/) 3.8 or later (Python 3.14 was used
+      during development), and the following libraries:
+        * [NumPy](https://numpy.org/)
+        * [Pillow](https://python-pillow.github.io/)
+        * [SciPy](https://scipy.org/)
+        * Optionally for `plot.py`: [Matplotlib](https://matplotlib.org/)
+    * [ImageMagick](https://imagemagick.org)
+    * [VapourSynth](https://www.vapoursynth.com/) with the following plugins:
+        * [BestSource](https://github.com/vapoursynth/bestsource)
+        * [Descale](https://github.com/Irrational-Encoding-Wizardry/descale)
+        * [vs-placebo](https://github.com/Lypheo/vs-placebo)
+    * [Wine](https://www.winehq.org/) (for extracting test card images buried
+      in the TCGEN software installer). On some platforms you might need
+      specialized forks such as
+      [CrossOver](https://www.codeweavers.com/crossover) (for macOS) or
+      [Hangover](https://github.com/AndreRH/hangover) (for Linux on ARM).
+
+For example, on Ubuntu 25.10 x86_64 (note: running on older versions, including
+LTS, may be problematic because VapourSynth requires very new dependencies), you
+can run the following commands to install all the prerequisites:
+
+```shell
+sudo dpkg --add-architecture i386
+sudo apt update
+sudo apt install \
+    curl cython3 git imagemagick libavformat-dev libplacebo-dev libzimg-dev \
+    meson pkgconf python3-dev python3-matplotlib python3-pip unzip wine32
+
+git clone --recursive https://github.com/vapoursynth/vapoursynth.git -b R73
+(cd vapoursynth && meson setup build && ninja -C build)
+sudo ninja -C vapoursynth/build install
+sudo ldconfig
+sudo mkdir -p /usr/local/lib/$(uname -m)-linux-gnu/vapoursynth
+python3 -m pip install --break-system-packages ./vapoursynth
+
+git clone --recursive https://github.com/vapoursynth/bestsource.git
+(cd bestsource && meson setup build && ninja -C build)
+sudo install \
+    bestsource/build/libbestsource.so \
+    /usr/local/lib/$(uname -m)-linux-gnu/vapoursynth/
+
+git clone --recursive https://github.com/Lypheo/vs-placebo.git
+# This may be necessary for running in virtual machines:
+sed -i -e 's/vp = pl_vulkan_default_params;/\0 vp.allow_software = 1;/' \
+    vs-placebo/src/vs-placebo.c
+(cd vs-placebo && meson setup build && ninja -C build)
+sudo ninja -C vs-placebo/build install
+
+git clone --recursive https://github.com/Irrational-Encoding-Wizardry/descale.git
+(cd descale && meson setup build && ninja -C build)
+sudo ninja -C descale/build install
+```
+
+On macOS, install [Homebrew](https://brew.sh/) first, and then run:
+
+```shell
+brew install \
+    cmake imagemagick libplacebo meson molten-vk pkgconf python-matplotlib \
+    scipy vapoursynth-bestsource vapoursynth-descale gcenx/wine/wine-crossover
+git clone --recursive https://github.com/Lypheo/vs-placebo.git
+(cd vs-placebo && meson setup build && ninja -C build)
+install vs-placebo/build/libvs_placebo.dylib /opt/homebrew/lib/vapoursynth/
+
+# On Apple Silicon you'll also need to install Rosetta 2:
+softwareupdate --install-rosetta --agree-to-license
+```
+
+### Contents
 
 * [INFO.md](./INFO.md) - technical information about where to get the transport
   stream recording, what tests cards are in there, etc.
@@ -64,18 +138,18 @@ Contents
           --shift -12.027515649466466`
 * [TestCardFElec_BarneyWol.xcf](./sources/TestCardFElec_BarneyWol.xcf) - XCF
   (GIMP) file containing features of the electronic version of Test Card F
-  recovered from [Barney Wol's archived website](https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html)
+  recovered from
+  [Barney Wol's archived website](https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html)
   and arranged on a canvas that matches the output of my scripts when set to
   `SCALE=3` (square pixels). These are said to come from BBC's original data, so
   can be used as reference.
 
-`extract.vpy` can operate in several different modes that can  be configured
+`extract.vpy` can operate in several different modes that can be configured
 through environment variables (which also means that `generate.sh` passes most
-of them through. I'm not documenting them, but feel free to look at  the code
+of them through. I'm not documenting them, but feel free to look at the code
 (and its usages of `os.environ`) to see what can be customized.
 
-Why?
-----
+## Why?
 
 BBC Test Cards are an important cultural artifact, recognized both inside and
 outside the United Kingdom. They are well known, and the image of Carole Hersee
@@ -109,8 +183,7 @@ other artifacts scattered over the Internet, may make it feasible to create
 versions of those patterns that are as definite as possible save for a release
 or leak of actual data used by the BBC.
 
-Legal disclaimer
-----------------
+## Legal disclaimer
 
 BBC test card images may be copyrighted, and some of their features, like the
 BBC logos and the Carole Hersee photograph, definitely are. The copyright owners
