@@ -94,60 +94,81 @@ install vs-placebo/build/libvs_placebo.dylib /opt/homebrew/lib/vapoursynth/
 softwareupdate --install-rosetta --agree-to-license
 ```
 
-### Contents
+### Running
+
+#### Downloading copyrighted sources
+
+**WARNING:** The `download.sh` script runs code downloaded from the Internet
+without much care about security. If that concerns you, you might want to run it
+in an isolated environment or manually reproduce the steps instead.
+
+Run:
+
+```shell
+./scripts/download.sh
+```
+
+This will download:
+
+* The transport stream of BBC HD's final broadcast, as originally found in the
+  [Lip-Sync issue thread on hummy.tv forums](https://hummy.tv/forum/threads/lip-sync-issue.10905/page-4)
+* Recreations of Test Cards C and D made by
+  [Richard T. Russell](https://en.wikipedia.org/wiki/Richard_T._Russell) - these
+  are being extracted from the
+  [Test Card Generator programming software](http://www.rtrussell.co.uk/tccgen/download.html)
+  package
+* Better quality version of the pre-war tuning signal image, as found on
+  [tvark.org](https://tvark.org/branding/bbc/bbc-tv/bbc-tv-1936)
+
+#### Regenerating the test cards
+
+Run:
+
+```shell
+./scripts/generate.sh
+```
+
+Test card images will be created in the current directory.
+
+A more detailed rundown of the test cards and their state will be added here at
+a later date.
+
+### Other files that may be of interest
 
 * [INFO.md](./INFO.md) - technical information about where to get the transport
   stream recording, what tests cards are in there, etc.
-* `scripts`
-    * [extract.vpy](./scripts/extract.vpy) -
-      [VapourSynth](https://github.com/vapoursynth/vapoursynth) script used to
-      extract and initially process the test cards from the transport stream
-        * Requires [BestSource](https://github.com/vapoursynth/bestsource) and
-          [Descale](https://github.com/Jaded-Encoding-Thaumaturgy/vapoursynth-descale)
-          to be installed and auto-loaded
-        * Processing includes a non-linear luminance curve to undo the
-          non-linearity present in the transport stream. See the description of
-          Test Card X in `INFO.md` for details.
-    * [convert.py](./scripts/convert.py) - a script that converts the raw output
-      from VapourSynth into a more sensible format, PNG by default. Can also
-      convert between full and limited color ranges. Writes the output to
-      stdout.
-    * [convertsigned.py](./scripts/convertsigned.py) - converts the output of
-      `convert.py` in the `RAW16OUT` mode between unsigned (0..65535, default)
-      and signed (-32768..32767) formats. The conversion is symmetrical, so it
-      can be used either way. Signed data is handy for viewing the waveform...
-      in audio editors, like Audacity. Might be convenient for visual
-      inspection.
-    * [generate.sh](./scripts/generate.sh) - a quick and dirty script that
-      builds images for all the supported test cards.
-    * [common.py](./scripts/common.py) - some type definitions and test card
-      metadata shared between scripts
-    * [eqcurve601.py](./scripts/eqcurve601.py), [eqcurve709.py](./eqcurve709.py) -
-      quick and dirty scripts for generating the precorrection curves used in
-      `extract.vpy`. Note that they have been manually tweaked afterwards.
-    * [extractld.py](./scripts/extractld.py) - processes `*.tbc` files created
-      by `ld-decode` into image files, in a way that is optimized for extracting
-      still images that are present for multiple frames.
-        * NOTE: In previous revisions of this repository, the `extractld.py`
-          script included some hardcoded tweaks to improve the quality of Test
-          Card F image extracted from the 1986 BBC Domesday Community South
-          disc. Those tweaks are no longer hardcoded. To achieve a result
-          equivalent to the old version, run: `scripts/extractld.py domesday.tbc
-          domesday.png 3000 23 --black-level 16221 --white-level 53274 --deghost
-          -4.5 0.1333333333333333 --u-scale 0.8333333333333333 --v-scale 0.875
-          --shift -12.027515649466466`
-* [TestCardFElec_BarneyWol.xcf](./sources/TestCardFElec_BarneyWol.xcf) - XCF
-  (GIMP) file containing features of the electronic version of Test Card F
+* [scripts/convertsigned.py](./scripts/convertsigned.py) - converts raw 16-bit
+  files between unsigned (0..65535) and signed (-32768..32767) formats. The
+  conversion is symmetrical, so it can be used either way. Signed data is handy
+  for viewing the waveform... in audio editors, like Audacity. Might be
+  convenient for visual inspection.
+* [scripts/eqcurve601.py](./scripts/eqcurve601.py),
+  [scripts/eqcurve709.py](./eqcurve709.py) - quick and dirty scripts for
+  generating the precorrection curves used in `extract.vpy`. Note that they have
+  been manually tweaked afterwards.
+* [scripts/extractld.py](./scripts/extractld.py) - processes `*.tbc` files
+  created by [ld-decode](https://github.com/happycube/ld-decode) into image
+  files, in a way that is optimized for extracting still images that are present
+  for multiple frames.
+    * NOTE: In previous revisions of this repository, the `extractld.py` script
+      included some hardcoded tweaks to improve the quality of Test Card F image
+      extracted from the 1986 BBC Domesday Community South disc. Those tweaks
+      are no longer hardcoded. To achieve a result equivalent to the old
+      version, run: `scripts/extractld.py domesday.tbc domesday.png 3000 23
+      --black-level 16221 --white-level 53274 --deghost -4.5 0.1333333333333333
+      --u-scale 0.8333333333333333 --v-scale 0.875 --shift -12.027515649466466`
+* `scripts/generate_*.sh` - alternate generate scripts that exclusively use the
+  BBC HD shutdown stream as the source and perform only parts of the processing.
+  May be appropriate for comparison and debugging.
+* [scripts/plot.py] - plots line data from image files, much like an
+  oscilloscope.
+* [sources/TestCardFElec_BarneyWol.xcf](./sources/TestCardFElec_BarneyWol.xcf) -
+  XCF (GIMP) file containing features of the electronic version of Test Card F
   recovered from
   [Barney Wol's archived website](https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html)
   and arranged on a canvas that matches the output of my scripts when set to
   `SCALE=3` (square pixels). These are said to come from BBC's original data, so
   can be used as reference.
-
-`extract.vpy` can operate in several different modes that can be configured
-through environment variables (which also means that `generate.sh` passes most
-of them through. I'm not documenting them, but feel free to look at the code
-(and its usages of `os.environ`) to see what can be customized.
 
 ## Why?
 
