@@ -21,7 +21,7 @@ def _main():
     inputs = [(1041, x, 1) for x in range(8, 912)] + [(1065, x, 1) for x in range(8, 920)]
 
     for coord in inputs:
-        lut[int(tsdata[*coord])].append(int(refdata[*coord]))
+        lut[int(tsdata[coord])].append(int(refdata[coord]))
 
     result = []
     for inp, outp in sorted(lut.items(), key=lambda x: x[0]):
