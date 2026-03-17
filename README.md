@@ -130,8 +130,324 @@ Run:
 
 Test card images will be created in the current directory.
 
-A more detailed rundown of the test cards and their state will be added here at
-a later date.
+### Current state
+
+<table>
+<tr>
+<th>Card</th>
+<th>State</th>
+<th>Sources</th>
+<th>Restoration details</th>
+</tr>
+<tr>
+<th colspan="4">Baird System test cards</th>
+</tr>
+<tr>
+<th>Television Eye</th>
+<th>✅ Finished</th>
+<td>[1]</td>
+<td>
+Resized to 30x70, Lanczos-filtered along the horizontal axis, cubic filtered
+along the vertical axis (note that the Baird system scans vertically). Edges
+cleaned up. Pixel values converted to linear light space.
+
+Restorations fully scripted.
+</td>
+</tr>
+<tr>
+<th>Circle and line</th>
+<th>✅ Finished</th>
+<td>[1]</td>
+<td>
+Added borders to fill a 3:7 aspect ratio. Aligned so that the line lands cleanly
+on a pixel coordinate. Resized to 30x70, Lanczos-filtered along the horizontal
+axis, cubic filtered along the vertical axis (note that the Baird system scans
+vertically). Edges cleaned up. Pixel values converted to linear light space.
+
+Restorations fully scripted.
+</td>
+</tr>
+<tr>
+<th colspan="4">405-line (Marconi System) test cards</th>
+</tr>
+<tr>
+<th>Tuning signal</th>
+<th>✅ Finished</th>
+<td>[1], [2]</td>
+<td>
+BBC HD shutdown source resized (Lanczos-filtered), aligned and leveled to match
+the higher-fidelity TVARK source - only the blanking from the BBC HD shutdown is
+used, the rest comes from TVARK.
+
+Hybrid FFT/cubic resampling used along the horizontal axis to match the 8.748
+MHz sampling rate. Gaussian filter resizing used along the vertical axis.
+
+Note that being pre-war, the intended display aspect ratio is 5:4 rather than
+4:3. This corresponds to the 702x378 area in the resulting file.
+
+Restorations fully scripted.
+</td>
+</tr>
+<tr>
+<th>Test Card A</th>
+<th>✅ Finished</th>
+<td>[1]</td>
+<td rowspan="2">
+Resized using a Lanczos filter along the vertical axis, and using hybrid
+FFT/cubic resampling along the horizontal axis.
+
+Restorations fully scripted.
+
+Note that these test cards are clearly modern reproductions. Remaining evidence
+of the originals suggest that they differed slightly, e.g. with the fonts used.
+</td>
+</tr>
+<tr>
+<th>Test Card B</th>
+<th>✅ Finished</th>
+<td>[1]</td>
+</tr>
+<tr>
+<th>Test Card C</th>
+<th>✅ Finished</th>
+<td>[3]</td>
+<td rowspan="2">
+Resized using a Gaussian filter along the vertical axis, and using hybrid
+FFT/cubic resampling along the horizontal axis.
+
+Restorations fully scripted.
+
+Note that these test cards are modern reproductions. The BBC HD shutdown
+broadcast seems to have used lower-quality, recompressed versions of the same
+reproductions (with minor changes to the frequency gratings). R.T.Russell's
+generator software used FFT-style resampling along both axes and treated only
+376 lines (instead of 378) as active for the 405-line system. Since the original
+test cards were optical, I decided not to replicate this behavior in pursuit of
+better quality.
+
+Unlike other 405-line test cards provided, these are not pre-blanked.
+</td>
+</tr>
+<tr>
+<th>Test Card D</th>
+<th>✅ Finished</th>
+<td>[3]</td>
+</tr>
+<tr>
+<th colspan="4">625-line ("PAL") test cards (4:3)</th>
+</tr>
+<tr>
+<th>Test Card E</th>
+<th>❌ Not available</th>
+<td></td>
+<td>Work not planned for now.</td>
+</tr>
+<tr>
+<th>Test Card F (optical)</th>
+<th>✅ Finished</th>
+<td>
+[1]
+
+Cross-referenced with various images from [tvark.org](https://tvark.org/)
+</td>
+<td>
+Resized using a Gaussian filter along the vertical axis, and using hybrid
+FFT/cubic resampling along the horizontal axis.
+
+Color bars overlay partially remade to achieve a sharp cutoff. Top of the card
+image enhanced by copying the second-topmost line and reusing one line of the
+bottom arrow on the top.
+
+White line on the very topmost line, visible in images from TVARK, remade.
+
+Restorations fully scripted.
+</td>
+</tr>
+<tr>
+<th>Test Card F (electronic)</th>
+<th>✅⚠️ Minor known inaccuracies</th>
+<td>
+[1], [4]
+
+Cross-referenced with the
+[recording on 1986 BBC Domesday Project Laserdisc](https://www.domesday86.com/?page_id=1332)
+</td>
+<td>
+Most of the card redrawn manually, by extrapolating from bits visible on Barney
+Wol's closeups whenever possible. Top colorbars, bottom arrow, parts of the
+non-defective diagonal gratings in the corners, the center photograph, the "F"
+letter and the BBC logo taken from the BBC HD shutdown broadcast. The white
+circular border around the photograph redrawn manually from scratch. Frequency
+gratings remade algorithmically.
+
+This version preserves most of the known defects of the original BBC data. The
+delay between luminance and chrominance channels on the photograph is not
+recreated, though.
+
+Unlike other 405-line test cards provided, this one is pre-blanked, in line with
+what is known about BBC's original data.
+
+Recreation performed mostly as square-pixel data, corresponding to a sampling
+rate of 192/13 MHz (~14.77 MHz). Both an "original" image at this sampling rate,
+and a version rescaled to standard 13.5 MHz, are provided. The latter is created
+by hybrid FFT/cubic resampling along the horizontal axis.
+</td>
+</tr>
+<tr>
+<th>Test Card G</th>
+<th>❌ Not available</th>
+<td></td>
+<td>Work scheduled.</td>
+</tr>
+<tr>
+<th>Test Card J</th>
+<th>⚠️ Inaccurate version only</th>
+<td>[1]</td>
+<td>
+Currently rendered by applying a "Debilinear descale" filter to a frame from the
+BBC HD shutdown broadcast. This approach results in numerous inaccuracies,
+especially along the vertical axis. The sub-black dot on the grayscale bars is
+also missing. This reproduction's quality may be sufficient for various
+non-testing applications, though.
+</td>
+</tr>
+<tr>
+<th colspan="4">525-line ("NTSC") test cards (4:3)</th>
+</tr>
+<tr>
+<th>Test Card J (525 lines)</th>
+<th>❌ Not available</th>
+<td></td>
+<td>Work postponed for now.</td>
+</tr>
+<tr>
+<th colspan="4">625-line ("PAL") test cards (16:9 anamorphic widescreen)</th>
+</tr>
+<tr>
+<th>Test Card F (widescreen)</th>
+<th>✅ Finished</th>
+<td>[1], Reconstructed Test Card F (electronic)</td>
+<td>
+Remade by filling in the missing grid lines, along with fixes for the known
+defects, to the reconstructed image of Test Card F (electronic) described above.
+Recreation done mostly at square-pixel data, corresponding to a sampling rate of
+256/13 MHz (~19.69 MHz). Resampled to standard 13.5 MHz using hybrid FFT/cubic
+resampling along the horizontal axis. Frequency gratings remade algorithmically.
+
+"BBC Widescreen" logo taken from the BBC HD shutdown broadcast.
+
+Restorations fully scripted.
+</td>
+</tr>
+<tr>
+<th>Test Card W</th>
+<th>⚠️ Inaccurate version only</th>
+<td>[1]</td>
+<td>
+Currently rendered by applying a "Debilinear descale" filter to a frame from the
+BBC HD shutdown broadcast. This approach results in numerous inaccuracies,
+especially along the vertical axis, and near the horizontal edges (as the HD
+broadcast did not preserve data beyond the active image width). The sub-black
+dot on the grayscale bars is also missing. This reproduction's quality may be
+sufficient for various non-testing applications, though.
+</td>
+</tr>
+<tr>
+<th colspan="4">High definition (1080-line) test cards</th>
+</tr>
+<tr>
+<th>Test Card "X"</th>
+<th>⚠️ Inaccurate version only</th>
+<td>[1]</td>
+<td>
+Currently taken directly from the BBC HD shutdown broadcast, with only luminance
+linearity precorrection. This version exhibits various compression and
+processing artifacts. The sub-black dot on the grayscale bars is also missing.
+
+This reproduction's quality may be sufficient for various non-testing
+applications, though.
+
+Note that this version noticeably differs from other renditions of this test
+card available on the Internet: the color bars and the green square above the
+photograph appear to be 80% colors instead of 100%. The frequency gratings also
+exhibit strange distortion, as if they've been resized, and the BBC HD logo is a
+different variant.
+
+Also note: "Test Card X" is not an official designation for this card. It is
+nevertheless used, as it is commonly referred to as such.
+</td>
+</tr>
+<tr>
+<th>Test Card 3D</th>
+<th>⚠️ Inaccurate version only</th>
+<td>[1]</td>
+<td>
+Currently taken directly from the BBC HD shutdown broadcast, with only luminance
+linearity precorrection. All the notes written for Test Card "X" also apply to
+this one.
+
+Note that this literally *is* Test Card "X" squashed to half its horizontal size
+and rendered twice, with an additional stereoscopic BBC logo in the corner.
+</td>
+</tr>
+</table>
+
+#### Sources list
+
+1. BBC HD shutdown broadcast from March 26th, 2013, as captured in a transport
+   stream recording found in the
+   [Lip-Sync issue thread on hummy.tv forums](https://hummy.tv/forum/threads/lip-sync-issue.10905/page-4)
+2. Pre-war tuning signal image found on
+   [tvark.org](https://tvark.org/branding/bbc/bbc-tv/bbc-tv-1936)
+3. [Richard T. Russell](https://en.wikipedia.org/wiki/Richard_T._Russell)'s
+   recreations of test cards C and D, bundled with his
+   [Test Card Generator programming software](http://www.rtrussell.co.uk/tccgen/download.html)
+   package
+4. Closeup of defects in BBC data from
+   [Barney Wol's archived website](https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html)
+
+#### File format description
+
+* All resulting files are PNG files with 16-bit depth per channel - RGB for
+  color images.
+* The channels conform to video-style encoding as defined for luminance - 4096
+  (`0x1000`) corresponds to the black level, and 60160 (`0xEB00`) corresponds to
+  the white (or full-brightness, full-saturation primary color) level.
+* For color images, the color channels correspond to primaries as defined for
+  the appropriate format (BT.601 for standard definition, BT.709 for high
+  definition).
+* Baird system images encode linear light intensity, and are converted to that
+  format during generation. All other images are gamma-corrected for CRTs - it
+  is assumed that the sources were already at the correct gamma; no additional
+  gamma correction is performed during processing (except for the blanking
+  border of the Tuning signal to match the image from a different source).
+* ICC profiles are embedded in each file. These are BT.601 and BT.709 profiles,
+  modified to take the limited value range into account. This ensures that the
+  files will be displayed correctly on any color-managed display without any
+  explicit processing (but will also hide any sub-black and super-white
+  content). Gamma 2.4 is assumed for non-linear profiles, which means that the
+  images will appear darkened compared to versions rendered as full-range
+  non-color-managed (so assumed sRGB) images.
+
+Instructions for converting these files to other, more interoperable formats
+will be added here at a later date.
+
+#### Other notes
+
+* Luminance channel on the BBC shutdown broadcast images is precorrected prior
+  to any other processing. The precorrection curves were created by taking the
+  grayscale gradients in Test Cards W and "X" as reference.
+* **Hybrid FFT/cubic resampling** is a custom method in which the input signal
+  is resampled twice: first using FFT resampling, and then using the cubic
+  kernel (Catmull-Rom spline) interpolation. Result of the cubic resampling is
+  used in parts of the signal with low amplitude (to avoid ripples), and results
+  from FFT resampling are used in higher-amplitude regions (to faithfully
+  preserve frequency gratings and similar signals). The amplitude threshold used
+  in these scripts is set to 1/128th of the range between black and white levels
+  (i.e., 0.78125 IRE).
+* **Sampling rate of 8.748 MHz is used for 405-line images** - this is exactly
+  (405/625)×13.5 MHz, and has been chosen to make the horizontal scanning in the
+  digital domain compatible with the 625-line system.
 
 ### Other files that may be of interest
 
@@ -143,9 +459,9 @@ a later date.
   for viewing the waveform... in audio editors, like Audacity. Might be
   convenient for visual inspection.
 * [scripts/eqcurve601.py](./scripts/eqcurve601.py),
-  [scripts/eqcurve709.py](./eqcurve709.py) - quick and dirty scripts for
+  [scripts/eqcurve709.py](./scripts/eqcurve709.py) - quick and dirty scripts for
   generating the precorrection curves used in `extract.vpy`. Note that they have
-  been manually tweaked afterwards.
+  been manually tweaked afterward.
 * [scripts/extractld.py](./scripts/extractld.py) - processes `*.tbc` files
   created by [ld-decode](https://github.com/happycube/ld-decode) into image
   files, in a way that is optimized for extracting still images that are present
@@ -160,8 +476,8 @@ a later date.
 * `scripts/generate_*.sh` - alternate generate scripts that exclusively use the
   BBC HD shutdown stream as the source and perform only parts of the processing.
   May be appropriate for comparison and debugging.
-* [scripts/plot.py] - plots line data from image files, much like an
-  oscilloscope.
+* [scripts/plot.py](./scripts/plot.py) - plots line data from image files, much
+  like an oscilloscope.
 * [sources/TestCardFElec_BarneyWol.xcf](./sources/TestCardFElec_BarneyWol.xcf) -
   XCF (GIMP) file containing features of the electronic version of Test Card F
   recovered from

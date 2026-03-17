@@ -62,7 +62,7 @@ magick "$SCRIPTDIR/../sources/d0bfa1fd2a9191224e10dafe9d9fc321dc254d80.jpg" \
 env CARD=2 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
 | "$SCRIPTDIR/convert.py" --output-colorspace 1 rawfloat: png:- \
 | magick png:- -crop 1400x1080+260+0 -filter Lanczos -resize 844x595\! \
-    -evaluate Pow 1.15 -evaluate Max 6.275% png:"$TMPIMAGE" -geometry +41+9 -composite \
+    -evaluate Pow 1.15 -evaluate Max 6.25% png:"$TMPIMAGE" -geometry +41+9 -composite \
     png:"$TMPIMAGE"
 "$SCRIPTDIR/resize.py" "$TMPIMAGE" 720 595 png:- --resampler hybrid \
 | magick png:- \
