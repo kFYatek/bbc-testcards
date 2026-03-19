@@ -254,10 +254,10 @@ def load_and_process_image(file: str, colorspace: ColorSpace = None) -> numpy.nd
         if data_range in (255, 65535):
             if data_range == 65535:
                 yuvdata /= 256.0
-            yuvdata[0] -= 16.0
-            yuvdata[0] /= 219.0
-            yuvdata[1:] -= 128.0
-            yuvdata[1:] /= 224.0
+            yuvdata[..., 0] -= 16.0
+            yuvdata[..., 0] /= 219.0
+            yuvdata[..., 1:] -= 128.0
+            yuvdata[..., 1:] /= 224.0
         else:
             assert data_range == 1
     else:
