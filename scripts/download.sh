@@ -32,3 +32,9 @@ if [ ! -f 'd0bfa1fd2a9191224e10dafe9d9fc321dc254d80.jpg' ]; then
         'https://tvark.org/media/1998i/2020-05-15/d0bfa1fd2a9191224e10dafe9d9fc321dc254d80.jpg' \
         -o 'd0bfa1fd2a9191224e10dafe9d9fc321dc254d80.jpg'
 fi
+
+if [ ! -f '8633vid_dat.zip' ]; then
+    curl -L \
+        'https://github.com/KarstenHervoeHansen/PTV/raw/aa169cac40d4fee87b41b449101e41e98e928121/PT5230/PT8633/video_data/8633vid_dat.zip' \
+        -o '8633vid_dat.zip'
+fi
