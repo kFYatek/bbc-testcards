@@ -45,7 +45,7 @@ def _main(*args):
     yuvdata[350:392, 152:568, 0] = 1.0
     yuvdata[308:350, 352:368, :] = fulldata[6268:6310, 352:368, :]
 
-    # Make clean backgroud grid
+    # Make clean background grid
     griddata = yuvdata.copy()
     griddata[32:544, 149:572, :] = yuvdata[31, 149:572, :]
     griddata[162:414, 120:149, :] = yuvdata[161, 120:149, :]
@@ -92,8 +92,44 @@ def _main(*args):
         223, 368:600, :]
     circledata[476:600, 120:600, 0] += 0.25
 
-    # TODO: Remake frequency gratings
-    # TODO: Anti-PAL
+    gratings = numpy.zeros((480,))
+    for i in range(120, 205):
+        # 1.5 MHz
+        gratings[i - 120] = numpy.cos((numpy.pi * (64 * i - 10755)) / 288)
+    for i in range(205, 208):
+        # Transition: 2.264151 MHz
+        gratings[i - 120] = numpy.cos((5 * numpy.pi * (64 * i - 13059)) / 954)
+    for i in range(208, 283):
+        # 2.5 MHz
+        gratings[i - 120] = numpy.cos((numpy.pi * (320 * i - 77481)) / 864)
+    for i in range(283, 285):
+        # Transition: 2.886598 MHz
+        gratings[i - 120] = numpy.cos((5 * numpy.pi * (448 * i - 127665)) / 5238)
+    for i in range(285, 359):
+        # 3.5 MHz
+        gratings[i - 120] = numpy.cos((numpy.pi * (448 * i - 143217)) / 864)
+    for i in range(359, 361):
+        # Transition: 3.862069 MHz
+        gratings[i - 120] = numpy.cos((numpy.pi * (448 * i - 160497)) / 783)
+    for i in range(361, 436):
+        # 4.0 MHz
+        gratings[i - 120] = numpy.cos((numpy.pi * (16 * i - 5733)) / 27)
+    for i in range(436, 438):
+        # Transition: 4.235294 MHz
+        gratings[i - 120] = numpy.cos((2 * numpy.pi * (16 * i - 6975)) / 51)
+    for i in range(438, 513):
+        # 4.5 MHz
+        gratings[i - 120] = numpy.cos((numpy.pi * (32 * i - 14049)) / 48)
+    for i in range(513, 514):
+        # Transition: 4.846154 MHz
+        gratings[i - 120] = numpy.cos((numpy.pi * (224 * i - 115119)) / 312)
+    for i in range(514, 600):
+        # 5.25 MHz
+        gratings[i - 120] = numpy.cos((numpy.pi * (224 * i - 115119)) / 288)
+
+    circledata[350:392, 120:600, 0] = (1.0 + gratings) * 5.0 / 14.0
+    circledata[308:350, 120:352, 0] *= circledata[350, 120:352, 0]
+    circledata[308:350, 368:600, 0] *= circledata[350, 368:600, 0]
 
     # Old-style circle mask
     circlemask = numpy.zeros(griddata.shape[:2])
@@ -121,6 +157,8 @@ def _main(*args):
 
     outdata = (circlemask * circledata.transpose((2, 0, 1)) + (
             1.0 - circlemask) * griddata.transpose((2, 0, 1))).transpose((1, 2, 0))
+
+    # TODO: Anti-PAL
 
     rgbdata = numpy.matvec(common.ColorSpace.BT601.to_rgb_matrix, outdata)
 
