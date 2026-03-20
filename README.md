@@ -119,6 +119,9 @@ This will download:
   package
 * Better quality version of the pre-war tuning signal image, as found on
   [tvark.org](https://tvark.org/branding/bbc/bbc-tv/bbc-tv-1936)
+* Test patterns developed for the PTV PT5230 / PT8633 test pattern generator, as
+  found in
+  [Karsten Hansen's PTV archive on GitHub](https://github.com/KarstenHervoeHansen/PTV/blob/main/PT5230/PT8633/video_data/8633vid_dat.zip)
 
 #### Regenerating the test cards
 
@@ -295,9 +298,37 @@ by hybrid FFT/cubic resampling along the horizontal axis.
 </tr>
 <tr>
 <th>Test Card G</th>
-<th>❌ Not available</th>
-<td></td>
-<td>Work scheduled.</td>
+<th>✅⚠️ Minor known inaccuracies</th>
+<td>
+[5]
+
+Cross-referenced with the
+[description on the archived Pember's Ponderings website](https://web.archive.org/web/20160409090425/http://www.pembers.freeserve.co.uk/Test-Cards/Test-Card-Technical.html#PM5544)
+and a
+[similar test card found on the Jason and the Argonauts Laserdisc](https://www.domesday86.com/?page_id=1332)
+</td>
+<td>
+Data from PT8633 edited by remaking the circle mask in a more crude way,
+analogous to early Philips generators (PM5544/PM5534). Square wave, color bars
+and bottom color step lifted by 25 IRE. Frequency gratings remade. Anti-PAL
+signal limited to lines 48-79 and its chroma information extended onto lines
+98-99, as well as to the far left.
+
+Restorations fully scripted.
+
+Known issues: most importantly, the anti-PAL signal is damaged in black and
+white (i.e., not gray) areas, due to clipping. This is an issue with the PNG
+conversion and could be avoided by saving as YUV directly, but that is not
+implemented yet.
+
+Other minor issues: the circle mask, while generated in a fashion similar to
+PM5544/PM5534, is not identical. Phase of the frequency gratings not matched to
+the original - but note that the original generators were analogue and each
+known unit was calibrated slightly differently (also applies to other elements
+of the image). Most Test Card G transmissions did not feature the white-on-black
+reflection needle pulse - it can be trivially removed from the image if needed.
+Character generator text is not recreated.
+</td>
 </tr>
 <tr>
 <th>Test Card J</th>
@@ -405,6 +436,9 @@ and rendered twice, with an additional stereoscopic BBC logo in the corner.
    package
 4. Closeup of defects in BBC data from
    [Barney Wol's archived website](https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html)
+5. Test patterns developed for the PTV PT5230 / PT8633 test pattern generator,
+   as found in
+   [Karsten Hansen's PTV archive on GitHub](https://github.com/KarstenHervoeHansen/PTV/blob/main/PT5230/PT8633/video_data/8633vid_dat.zip)
 
 #### File format description
 
