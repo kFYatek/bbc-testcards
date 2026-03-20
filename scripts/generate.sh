@@ -109,3 +109,4 @@ env CARD=11 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" rawfloat
 # Electronic SD test cards
 env CARD=10 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" rawfloat: "$OUTDIR/TestCardJ.png"
 env CARD=12 vspipe "$SCRIPTDIR/extract.vpy" - | "$SCRIPTDIR/convert.py" rawfloat: "$OUTDIR/TestCardW.png"
+"$SCRIPTDIR/tcg.py" "$OUTDIR/TestCardG_AP1.png" "$OUTDIR/TestCardG_AP2.png"
