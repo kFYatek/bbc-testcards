@@ -14,8 +14,10 @@ import common
 def _main(*args):
     parser = argparse.ArgumentParser(
         description='Recreate the BBC Test Card G variant of the Philips pattern.')
-    parser.add_argument('output_file', type=str,
-                        help='Output file. Will be passed through to ImageMagick.')
+    parser.add_argument('output_file_ap1', type=str,
+                        help='Output file for the AntiPAL1 variant. Will be passed through to ImageMagick.')
+    parser.add_argument('output_file_ap2', type=str,
+                        help='Output file for the AntiPAL1 variant. Will be passed through to ImageMagick.')
     args = parser.parse_args(args)
 
     with zipfile.ZipFile(
@@ -158,20 +160,28 @@ def _main(*args):
     outdata = (circlemask * circledata.transpose((2, 0, 1)) + (
             1.0 - circlemask) * griddata.transpose((2, 0, 1))).transpose((1, 2, 0))
 
-    # TODO: Anti-PAL
+    outdata_ap = numpy.zeros((2, *outdata.shape))
+    outdata_ap[0] = outdata
+    outdata_ap[1] = outdata
+    outdata_ap[0, 58:140, 48:80, :] = fulldata[288:370, 48:80, :]
+    outdata_ap[1, 58:140, 48:80, :] = fulldata[864:946, 48:80, :]
+    outdata_ap[:, 98:100, 48:80, 1:] = outdata_ap[:, 94:96, 48:80, 1:]
+    outdata_ap[:, 58:140, 0:48, 1:] = outdata_ap[0:1, 56:57, 0:48, 0:1] * outdata_ap[
+        :, 58:140, 48:49, 1:]
 
-    rgbdata = numpy.matvec(common.ColorSpace.BT601.to_rgb_matrix, outdata)
+    rgbdata = numpy.matvec(common.ColorSpace.BT601.to_rgb_matrix, outdata_ap)
 
-    outbuf = bytearray(numpy.prod(rgbdata.shape) * 2)
-    output = numpy.ndarray(rgbdata.shape, dtype=numpy.uint16, buffer=outbuf)
-    output[:] = numpy.round(
-        numpy.minimum(numpy.maximum(rgbdata * (219.0 * 256.0) + 4096.0, 0.0), 65535.0))
-    subprocess.run(
-        ['magick', '-size', f'{output.shape[1]}x{numpy.prod(output.shape[0])}', '-depth', '16',
-         'rgb:-', '+profile', 'icc', '-profile',
-         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'icc',
-                      'ITU-601-625-video16-v4.icc'), '-define', 'png:color-type=2',
-         args.output_file], input=outbuf, check=True)
+    for variant, filename in ((0, args.output_file_ap1), (1, args.output_file_ap2)):
+        outbuf = bytearray(numpy.prod(rgbdata[variant].shape) * 2)
+        output = numpy.ndarray(rgbdata[variant].shape, dtype=numpy.uint16, buffer=outbuf)
+        output[:] = numpy.round(
+            numpy.minimum(numpy.maximum(rgbdata[variant] * (219.0 * 256.0) + 4096.0, 0.0), 65535.0))
+        subprocess.run(
+            ['magick', '-size', f'{output.shape[1]}x{numpy.prod(output.shape[0])}', '-depth', '16',
+             'rgb:-', '+profile', 'icc', '-profile',
+             os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'icc',
+                          'ITU-601-625-video16-v4.icc'), '-define', 'png:color-type=2', filename],
+            input=outbuf, check=True)
 
 
 if __name__ == "__main__":
