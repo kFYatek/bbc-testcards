@@ -17,7 +17,7 @@ def _main(*args):
     parser.add_argument('output_file_ap1', type=str,
                         help='Output file for the AntiPAL1 variant. Will be passed through to ImageMagick.')
     parser.add_argument('output_file_ap2', type=str,
-                        help='Output file for the AntiPAL1 variant. Will be passed through to ImageMagick.')
+                        help='Output file for the AntiPAL2 variant. Will be passed through to ImageMagick.')
     args = parser.parse_args(args)
 
     with zipfile.ZipFile(
@@ -172,16 +172,19 @@ def _main(*args):
     rgbdata = numpy.matvec(common.ColorSpace.BT601.to_rgb_matrix, outdata_ap)
 
     for variant, filename in ((0, args.output_file_ap1), (1, args.output_file_ap2)):
-        outbuf = bytearray(numpy.prod(rgbdata[variant].shape) * 2)
-        output = numpy.ndarray(rgbdata[variant].shape, dtype=numpy.uint16, buffer=outbuf)
-        output[:] = numpy.round(
-            numpy.minimum(numpy.maximum(rgbdata[variant] * (219.0 * 256.0) + 4096.0, 0.0), 65535.0))
-        subprocess.run(
-            ['magick', '-size', f'{output.shape[1]}x{numpy.prod(output.shape[0])}', '-depth', '16',
-             'rgb:-', '+profile', 'icc', '-profile',
-             os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'icc',
-                          'ITU-601-625-video16-v4.icc'), '-define', 'png:color-type=2', filename],
-            input=outbuf, check=True)
+        outbuf = bytearray(numpy.prod(rgbdata[variant].shape) * 8)
+        output = numpy.ndarray(rgbdata[variant].shape, dtype=numpy.float64, buffer=outbuf)
+        output[:] = rgbdata[variant]
+        command = ['magick', '-size', f'{output.shape[1]}x{numpy.prod(output.shape[0])}', '-define',
+                   'quantum:format=floating-point', '-depth', '64', 'rgb:-', '-type', 'TrueColor',
+                   '+profile', 'icc', '-profile',
+                   os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'icc',
+                                'BT.601_625-line.icc'), '-define', 'png:color-type=2']
+        if filename.lower().startswith('tiff:') or filename.lower().endswith(
+                '.tif') or filename.lower().endswith('.tiff'):
+            command += ['-compress', 'lzw']
+        command.append(filename)
+        subprocess.run(command, input=outbuf, check=True)
 
 
 if __name__ == "__main__":

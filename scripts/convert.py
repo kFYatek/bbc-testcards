@@ -14,7 +14,7 @@ def _main(*args):
     parser = argparse.ArgumentParser(
         description='Convert an initially preprocessed image to a more usable format.')
     parser.add_argument('input_file', type=str,
-                        help='Input file. May be any format supported by PIL or raw{16|float}:[filename@]{width}x{height} - if no filename is specified for raw, it\'s read from stdin.')
+                        help='Input file. May be any format supported by PIL or raw{16|float|f64}:[filename@]{width}x{height} - if no filename is specified for raw, it\'s read from stdin.')
     parser.add_argument('--input-colorspace', type=lambda x: common.ColorSpace(int(x)),
                         help=f'Color space to use when converting input to YUV {list(common.ColorSpace)}. Default is BT.601 for PIL input and YUV for raw input.')
     parser.add_argument('--output-colorspace', type=lambda x: common.ColorSpace(int(x)),
@@ -27,13 +27,11 @@ def _main(*args):
                         help=f'Scaling mode to use {list(common.ScalingMode)}.')
     common.resamplers.add_argparse_arguments(parser)
     parser.add_argument('output_file', type=str,
-                        help='Output file. May be any format supported by ImageMagick or raw16:[filename] (stdout by default).')
-    parser.add_argument('--fullrange', action='store_true',
-                        help='Use full (0..65535) instead of limited/video (4096..60160) range on output.')
+                        help='Output file. May be any format supported by ImageMagick.')
     args = parser.parse_args(args)
 
-    yuvdata = common.load_and_process_image(args.input_file, args.input_colorspace).transpose(
-        (2, 0, 1))
+    yuvdata = common.load_and_process_image(args.input_file, args.input_colorspace, common.CARDS[
+        args.card].mode if args.card is not None else None).transpose((2, 0, 1))
     width = yuvdata.shape[2]
     height = yuvdata.shape[1]
 
@@ -74,61 +72,42 @@ def _main(*args):
 
     outdata = numpy.matvec(args.output_colorspace.to_rgb_matrix, yuvdata, axes=[(0, 1), 0, 0])
 
-    raw16out = args.output_file.startswith('raw16:')
-    if raw16out:
-        format_name, output_file = args.output_file.split(':', 1)
-        if output_file == '':
-            output_file = '/dev/stdout'
-    else:
-        output_file = args.output_file
-    if args.fullrange:
-        if args.output_colorspace is common.ColorSpace.YUV:
-            outdata[1:] += 0.5
-        outdata *= 65535.0
-    else:
-        if args.output_colorspace is not common.ColorSpace.YUV:
-            outdata *= 219.0
-            outdata += 16.0
-        else:
-            outdata[0] *= 219.0
-            outdata[0] += 16.0
-            outdata[1:] *= 224.0
-            outdata[1:] += 128.0
-        outdata *= 256.0
+    if args.output_colorspace is common.ColorSpace.YUV:
+        outdata[1:] += 0.5
 
     outdata = numpy.transpose(outdata, (1, 2, 0))
-    outbuf = bytearray(outdata.size * 2)
-    output = numpy.ndarray(outdata.shape, dtype=numpy.uint16, buffer=outbuf)
-    output[:, :, :] = numpy.round(numpy.minimum(numpy.maximum(outdata, 0.0), 65535.0))
+    outbuf = bytearray(outdata.size * 8)
+    output = numpy.ndarray(outdata.shape, dtype=numpy.float64, buffer=outbuf)
+    output[:, :, :] = outdata
 
-    if raw16out:
-        with open(output_file, 'wb') as f:
-            f.write(outbuf)
+    command = ['magick', '-size', f'{output.shape[1]}x{output.shape[0]}', '-define',
+               'quantum:format=floating-point', '-depth', '64', 'rgb:-']
+    iccfile = None
+    if args.output_colorspace is common.ColorSpace.GRAYSCALE:
+        iccfile = 'ITU-1886-gray.icc'
     else:
-        command = ['magick', '-size', f'{output.shape[1]}x{output.shape[0]}', '-depth', '16',
-                   'rgb:-']
-        iccfile = None
-        if not args.fullrange:
-            if args.output_colorspace is common.ColorSpace.GRAYSCALE:
-                iccfile = 'ITU-1886-gray-video16-v4.icc'
-            elif args.output_colorspace is common.ColorSpace.BT601:
-                if output.shape[0] in range(480, 487):
-                    iccfile = 'ITU-601-525-video16-v4.icc'
-                else:
-                    iccfile = 'ITU-601-625-video16-v4.icc'
-            elif args.output_colorspace is common.ColorSpace.BT709:
-                iccfile = 'ITU-709-video16-v4.icc'
-        if iccfile is not None:
-            command += ['+profile', 'icc', '-profile',
-                        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                     'icc', iccfile)]
-        if args.output_colorspace is common.ColorSpace.GRAYSCALE:
-            command += ['-define', 'png:color-type=0']
-        else:
-            command += ['-define', 'png:color-type=2']
-        command += [output_file]
+        command += ['-type', 'TrueColor']
+        if args.output_colorspace is common.ColorSpace.BT601:
+            if output.shape[0] in range(480, 487):
+                iccfile = 'BT.601_525-line.icc'
+            else:
+                iccfile = 'BT.601_625-line.icc'
+        elif args.output_colorspace is common.ColorSpace.BT709:
+            iccfile = 'ITU-RBT709ReferenceDisplay.icc'
+    if iccfile is not None:
+        command += ['+profile', 'icc', '-profile',
+                    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'icc',
+                                 iccfile)]
+    if args.output_colorspace is common.ColorSpace.GRAYSCALE:
+        command += ['-define', 'png:color-type=0']
+    else:
+        command += ['-define', 'png:color-type=2']
+    if args.output_file.lower().startswith('tiff:') or args.output_file.lower().endswith(
+            '.tif') or args.output_file.lower().endswith('.tiff'):
+        command += ['-compress', 'lzw']
+    command += [args.output_file]
 
-        subprocess.run(command, input=outbuf, check=True)
+    subprocess.run(command, input=outbuf, check=True)
 
 
 if __name__ == "__main__":

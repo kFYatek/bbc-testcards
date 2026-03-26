@@ -186,16 +186,21 @@ def resample(x: numpy.ndarray, num: int = None, shift: float = 0.0, shift_to_cen
 
 
 def read_image(filename: str, infer_dimensions=None) -> tuple[numpy.ndarray, int]:
-    if filename.startswith('raw16:') or filename.startswith('rawfloat:'):
+    if filename.startswith('raw16:') or filename.startswith('rawfloat:') or filename.startswith(
+            'rawf64:'):
         format, args = filename.split(':', 1)
         if format == 'raw16':
             dtype = numpy.uint16
             range = 65535
             bytes = 6
-        else:
+        elif format == 'rawfloat':
             dtype = numpy.float32
             range = 1
             bytes = 12
+        else:
+            dtype = numpy.float64
+            range = 1
+            bytes = 24
         if '@' in args:
             filename, args = args.split('@', 1)
         else:
@@ -228,17 +233,23 @@ def read_image(filename: str, infer_dimensions=None) -> tuple[numpy.ndarray, int
     return data, range
 
 
-def load_and_process_image(file: str, colorspace: ColorSpace = None) -> numpy.ndarray:
+def load_and_process_image(file: str, colorspace: ColorSpace = None,
+                           resolution_hint: typing.Optional[
+                               OriginalResolution] = None) -> numpy.ndarray:
     def infer_dimensions(samples):
         if samples % 1080 == 0 and samples // 1080 >= 1440:
             return samples // 1080, 1080
-        elif samples % 576 == 0 and samples // 576 >= 720:
+        elif resolution_hint in (None, OriginalResolution.PAL43,
+                                 OriginalResolution.PAL169) and samples % 576 == 0 and samples // 576 >= 720:
             return samples // 576, 576
-        elif samples % 486 == 0 and samples // 486 >= 654:
+        elif resolution_hint in (None, OriginalResolution.NTSC43,
+                                 OriginalResolution.NTSC169) and samples % 486 == 0 and samples // 486 >= 654:
             return samples // 486, 486
-        elif samples % 480 == 0 and samples // 480 >= 654:
+        elif resolution_hint in (None, OriginalResolution.NTSC43,
+                                 OriginalResolution.NTSC169) and samples % 480 == 0 and samples // 480 >= 654:
             return samples // 480, 480
-        elif samples % 378 == 0 and samples // 378 >= 486:
+        elif resolution_hint in (None, OriginalResolution.SYSA43,
+                                 OriginalResolution.SYSA54) and samples % 378 == 0 and samples // 378 >= 486:
             return samples // 378, 378
         raise Exception('Unable to infer image dimensions')
 
