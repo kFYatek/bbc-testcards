@@ -60,6 +60,28 @@ def depal(chroma):
     return chroma
 
 
+def apply_vir(luma, chroma):
+    burst_luma = numpy.mean(numpy.mean(luma[23:258, 82:102], axis=-1), axis=-1)
+    vir_luma = numpy.mean(luma[18, 208:480], axis=-1)
+    vir_angles = numpy.angle(numpy.mean(-chroma[:, 18, 208:480], axis=-1))
+    multipliers = vir_angles / (vir_luma - burst_luma)
+    offsets = (-burst_luma * vir_angles) / (vir_luma - burst_luma)
+    luma = numpy.tile(luma, (chroma.shape[0], 1, 1)).transpose((1, 2, 0))
+    angle_fixup = (multipliers * luma + offsets).transpose((2, 0, 1))
+    return chroma * numpy.exp(-1.0j * angle_fixup)
+
+
+def dentsc(luma, chroma, vir=True):
+    burst_angles = numpy.angle(numpy.mean(chroma[:, :, 82:102], axis=-1))
+    chroma = chroma.transpose((2, 0, 1))
+    chroma = chroma * numpy.exp(1.0j * (numpy.pi - burst_angles))
+    chroma = chroma.transpose((1, 2, 0))
+    if vir:
+        chroma[:, :263] = apply_vir(luma[:263], chroma[:, :263])
+        chroma[:, 263:] = apply_vir(luma[263:], chroma[:, 263:])
+    return chroma
+
+
 def deinterlace(data):
     output = numpy.ndarray(data.shape, dtype=data.dtype)
     output[0::2] = data[:data.shape[0] // 2]
@@ -89,6 +111,8 @@ def _main(*args):
     parser.add_argument('--shift', type=float,
                         help='Number of samples (at 4fSC, possibly fractional) to shift the image by')
     parser.add_argument('--hue-shift', type=float, help='Shift, in radians, of the color hue')
+    parser.add_argument('--no-vir', action='store_true',
+                        help='Do not use the VIR signal for NTSC hue correction')
     parser.add_argument('--bt601', action='store_true',
                         help='Use BT.601 sampling rate on output instead of square pixels')
     args = parser.parse_args(args)
@@ -171,10 +195,7 @@ def _main(*args):
     if metadata['videoParameters']['system'] == 'PAL':
         chroma = depal(chroma)
     else:
-        burst_angles = numpy.angle(numpy.mean(chroma[:, :, 82:102], axis=-1))
-        chroma = chroma.transpose((2, 0, 1))
-        chroma = chroma * numpy.exp(1.0j * (numpy.pi - burst_angles))
-        chroma = chroma.transpose((1, 2, 0))
+        chroma = dentsc(luma, chroma, not args.no_vir)
 
     chroma = numpy.mean(chroma, axis=0)
     luma = deinterlace(luma)
