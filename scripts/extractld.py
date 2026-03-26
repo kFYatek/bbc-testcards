@@ -229,17 +229,16 @@ def _main(*args):
             output = common.resample(output, 1358, axis=1)
             output = output[:, :654, :]
 
-    outbuf = bytearray(numpy.prod(output.shape) * 2)
-    outarr = numpy.ndarray(output.shape, dtype=numpy.uint16, buffer=outbuf)
-    outarr[:] = numpy.round(
-        numpy.minimum(numpy.maximum(output * (219.0 * 256.0) + 4096.0, 0.0), 65535.0))
+    outbuf = bytearray(numpy.prod(output.shape) * 8)
+    outarr = numpy.ndarray(output.shape, dtype=numpy.float64, buffer=outbuf)
+    outarr[:] = output
 
     subprocess.run(
-        ['magick', '-size', f'{output.shape[1]}x{numpy.prod(output.shape[0])}', '-depth', '16',
-         'rgb:-', '+profile', 'icc', '-profile',
+        ['magick', '-size', f'{output.shape[1]}x{numpy.prod(output.shape[0])}', '-define',
+         'quantum:format=floating-point', '-depth', '64', 'rgb:-', '+profile', 'icc', '-profile',
          os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'icc',
-                      'ITU-601-625-video16-v4.icc' if metadata['videoParameters'][
-                                                          'system'] == 'PAL' else 'ITU-601-525-video16-v4.icc'),
+                      'BT.601_625-line.icc' if metadata['videoParameters'][
+                                                   'system'] == 'PAL' else 'BT.601_525-line.icc'),
          args.output_file], input=outbuf, check=True)
 
 
