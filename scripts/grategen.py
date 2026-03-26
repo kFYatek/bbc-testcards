@@ -9,14 +9,12 @@ import numpy
 
 def _main(*args):
     parser = argparse.ArgumentParser(
-        description='Generate a frequency grating as a 1024x128 image. The output is written as a PNG stream to the standard output.')
+        description='Generate a frequency grating as a 1024x128 image. The output is written as a TIFF stream to the standard output.')
     parser.add_argument('sample_rate', type=float,
                         help='Sampling rate assumed for the target image.')
     parser.add_argument('frequency', type=float, help='Frequency of the grating.')
-    parser.add_argument('minimum', type=float,
-                        help='Value for the lower tip of the grating. 0..1 range is assumed and scaled to 16-bit video range (4096..60160).')
-    parser.add_argument('maximum', type=float,
-                        help='Value for the lower tip of the grating. 0..1 range is assumed and scaled to 16-bit video range (4096..60160).')
+    parser.add_argument('minimum', type=float, help='Value for the lower tip of the grating.')
+    parser.add_argument('maximum', type=float, help='Value for the lower tip of the grating.')
     parser.add_argument('start_phase', type=float, nargs='?', default=0.0,
                         help='Reference phase of the grating, where 0 is origin of a cosine, and integers correspond to a full period.')
     parser.add_argument('start_shift', type=float, nargs='?', default=0.0,
@@ -51,15 +49,15 @@ def _main(*args):
                 line[i] = (line[i] - 1.0) / slope + 1.0
 
     line = numpy.sin(line * 2.0 * numpy.pi)
-    line = numpy.round(
-        ((line + 1.0) * 0.5 * (args.maximum - args.minimum) + args.minimum) * 56064.0 + 4096.0)
+    line = (line + 1.0) * 0.5 * (args.maximum - args.minimum) + args.minimum
 
-    outbuf = bytearray(128 * 1024 * 2)
-    output = numpy.ndarray((128, 1024), dtype=numpy.uint16, buffer=outbuf)
+    outbuf = bytearray(128 * 1024 * 8)
+    output = numpy.ndarray((128, 1024), dtype=numpy.float64, buffer=outbuf)
     output[:] = line
 
-    subprocess.run(['magick', '-size', '1024x128', '-depth', '16', 'gray:-', 'png:-'], input=outbuf,
-                   check=True)
+    subprocess.run(
+        ['magick', '-size', '1024x128', '-define', 'quantum:format=floating-point', '-depth', '64',
+         'gray:-', 'tiff:-'], input=outbuf, check=True)
 
 
 if __name__ == '__main__':
