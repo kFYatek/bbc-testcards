@@ -30,8 +30,8 @@ def _main(*args):
                         help='Output file. May be any format supported by ImageMagick.')
     args = parser.parse_args(args)
 
-    yuvdata = common.load_and_process_image(args.input_file, args.input_colorspace).transpose(
-        (2, 0, 1))
+    yuvdata = common.load_and_process_image(args.input_file, args.input_colorspace, common.CARDS[
+        args.card].mode if args.card is not None else None).transpose((2, 0, 1))
     width = yuvdata.shape[2]
     height = yuvdata.shape[1]
 
