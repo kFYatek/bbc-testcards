@@ -316,12 +316,7 @@ signal limited to lines 48-79 and its chroma information extended onto lines
 
 Restorations fully scripted.
 
-Known issues: most importantly, the anti-PAL signal is damaged in black and
-white (i.e., not gray) areas, due to clipping. This is an issue with the PNG
-conversion and could be avoided by saving as YUV directly, but that is not
-implemented yet.
-
-Other minor issues: the circle mask, while generated in a fashion similar to
+Known issues: the circle mask, while generated in a fashion similar to
 PM5544/PM5534, is not identical. Phase of the frequency gratings not matched to
 the original - but note that the original generators were analogue and each
 known unit was calibrated slightly differently (also applies to other elements
@@ -442,11 +437,12 @@ and rendered twice, with an additional stereoscopic BBC logo in the corner.
 
 #### File format description
 
-* All resulting files are PNG files with 16-bit depth per channel - RGB for
-  color images.
-* The channels conform to video-style encoding as defined for luminance - 4096
-  (`0x1000`) corresponds to the black level, and 60160 (`0xEB00`) corresponds to
-  the white (or full-brightness, full-saturation primary color) level.
+* All resulting files are TIFF files with 64-bit floating-point depth per
+  channel - RGB for color images.
+* For each channel, 0.0 corresponds to the black level, and 1.0 corresponds to
+  the white (or full-brightness, full-saturation primary color) level. Values
+  outside the [0..1] range are permitted, to represent values outside the
+  video-style limited range (i.e., [16..235] for 8-bit encoding).
 * For color images, the color channels correspond to primaries as defined for
   the appropriate format (BT.601 for standard definition, BT.709 for high
   definition).
@@ -455,13 +451,12 @@ and rendered twice, with an additional stereoscopic BBC logo in the corner.
   is assumed that the sources were already at the correct gamma; no additional
   gamma correction is performed during processing (except for the blanking
   border of the Tuning signal to match the image from a different source).
-* ICC profiles are embedded in each file. These are BT.601 and BT.709 profiles,
-  modified to take the limited value range into account. This ensures that the
-  files will be displayed correctly on any color-managed display without any
-  explicit processing (but will also hide any sub-black and super-white
-  content). Gamma 2.4 is assumed for non-linear profiles, which means that the
-  images will appear darkened compared to versions rendered as full-range
-  non-color-managed (so assumed sRGB) images.
+* ICC profiles are embedded in each file. These are BT.601 and BT.709 profiles.
+  This ensures that the files will be displayed correctly on any color-managed
+  display without any explicit processing (but will also hide any sub-black and
+  super-white content). Gamma 2.4 is assumed for non-linear profiles, which
+  means that the images will appear darkened compared to rendering them without
+  color management.
 
 Instructions for converting these files to other, more interoperable formats
 will be added here at a later date.
@@ -504,7 +499,7 @@ will be added here at a later date.
       included some hardcoded tweaks to improve the quality of Test Card F image
       extracted from the 1986 BBC Domesday Community South disc. Those tweaks
       are no longer hardcoded. To achieve a result equivalent to the old
-      version, run: `scripts/extractld.py domesday.tbc domesday.png 3000 23
+      version, run: `scripts/extractld.py domesday.tbc domesday.tiff 3000 23
       --black-level 16221 --white-level 53274 --deghost -4.5 0.1333333333333333
       --u-scale 0.8333333333333333 --v-scale 0.875 --shift -12.027515649466466`
 * `scripts/generate_*.sh` - alternate generate scripts that exclusively use the
