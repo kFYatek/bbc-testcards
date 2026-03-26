@@ -85,13 +85,15 @@ def _main(*args):
     iccfile = None
     if args.output_colorspace is common.ColorSpace.GRAYSCALE:
         iccfile = 'ITU-1886-gray.icc'
-    elif args.output_colorspace is common.ColorSpace.BT601:
-        if output.shape[0] in range(480, 487):
-            iccfile = 'BT.601_525-line.icc'
-        else:
-            iccfile = 'BT.601_625-line.icc'
-    elif args.output_colorspace is common.ColorSpace.BT709:
-        iccfile = 'ITU-RBT709ReferenceDisplay.icc'
+    else:
+        command += ['-type', 'TrueColor']
+        if args.output_colorspace is common.ColorSpace.BT601:
+            if output.shape[0] in range(480, 487):
+                iccfile = 'BT.601_525-line.icc'
+            else:
+                iccfile = 'BT.601_625-line.icc'
+        elif args.output_colorspace is common.ColorSpace.BT709:
+            iccfile = 'ITU-RBT709ReferenceDisplay.icc'
     if iccfile is not None:
         command += ['+profile', 'icc', '-profile',
                     os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'icc',

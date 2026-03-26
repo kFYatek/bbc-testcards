@@ -160,8 +160,8 @@ def _main(*args):
     output = numpy.ndarray(result.shape, dtype=numpy.float64, buffer=outbuf)
     output[:] = result
     command = ['magick', '-size', f'{output.shape[1]}x{numpy.prod(output.shape[0])}', '-define',
-               'quantum:format=floating-point', '-depth', '64', 'rgb:-', '+profile', 'icc',
-               '-profile',
+               'quantum:format=floating-point', '-depth', '64', 'rgb:-', '-type', 'TrueColor',
+               '+profile', 'icc', '-profile',
                os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'icc',
                             'BT.601_625-line.icc'), '-define', 'png:color-type=2']
     if args.output_file.lower().startswith('tiff:') or args.output_file.lower().endswith(
