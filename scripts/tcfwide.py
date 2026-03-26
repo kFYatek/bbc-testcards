@@ -36,21 +36,21 @@ def _main(*args):
                                                   backend_hi=common.resamplers.AliasedResampler())
     resample = lambda *args, **kwargs: common.resample(*args, **kwargs, resampler=resampler)
 
-    data = subprocess.run(['magick', args.tcf_input, '-depth', '16', 'rgb:-'],
-                          stdout=subprocess.PIPE, check=True).stdout
-    assert len(data) == 788 * 576 * 3 * 2
-    data = numpy.ndarray((576, 788, 3), dtype=numpy.uint16, buffer=data).copy()
+    data = subprocess.run(
+        ['magick', args.tcf_input, '-define', 'quantum:format=floating-point', '-depth', '64',
+         'rgb:-'], stdout=subprocess.PIPE, check=True).stdout
+    assert len(data) == 788 * 576 * 3 * 8
+    data = numpy.ndarray((576, 788, 3), dtype=numpy.float64, buffer=data).copy()
 
-    logodata = subprocess.run(['magick', args.tcfwide_input, '-depth', '16', 'rgb:-'],
-                              stdout=subprocess.PIPE, check=True).stdout
-    assert len(logodata) == 720 * 576 * 3 * 2
-    logodata = numpy.ndarray((576, 720, 3), dtype=numpy.uint16, buffer=logodata)
-    logodata = (logodata - 4096) / (219.0 * 256.0)
+    logodata = subprocess.run(
+        ['magick', args.tcfwide_input, '-define', 'quantum:format=floating-point', '-depth', '64',
+         'rgb:-'], stdout=subprocess.PIPE, check=True).stdout
+    assert len(logodata) == 720 * 576 * 3 * 8
+    logodata = numpy.ndarray((576, 720, 3), dtype=numpy.float64, buffer=logodata).copy()
 
     # Remove the logos
-    data[447:475, 383:407, :] = 32238
-    data[496:527, 337:452, :] = 32238
-    data = (data - 4096) / (219.0 * 256.0)
+    data[447:475, 383:407, :] = 0.5019620433789954
+    data[496:527, 337:452, :] = 0.5019620433789954
     fix_arrow_tip(data)
 
     # ==== Copy the good parts ====
@@ -156,16 +156,19 @@ def _main(*args):
     # ==== BBC Widescreen logo ====
     result[496:527, 237:482, :] = logodata[496:527, 237:482, :]
 
-    outbuf = bytearray(numpy.prod(result.shape) * 2)
-    output = numpy.ndarray(result.shape, dtype=numpy.uint16, buffer=outbuf)
-    output[:] = numpy.round(
-        numpy.minimum(numpy.maximum(result * (219.0 * 256.0) + 4096.0, 0.0), 65535.0))
-    subprocess.run(
-        ['magick', '-size', f'{output.shape[1]}x{numpy.prod(output.shape[0])}', '-depth', '16',
-         'rgb:-', '+profile', 'icc', '-profile',
-         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'icc',
-                      'ITU-601-625-video16-v4.icc'), '-define', 'png:color-type=2',
-         args.output_file], input=outbuf, check=True)
+    outbuf = bytearray(numpy.prod(result.shape) * 8)
+    output = numpy.ndarray(result.shape, dtype=numpy.float64, buffer=outbuf)
+    output[:] = result
+    command = ['magick', '-size', f'{output.shape[1]}x{numpy.prod(output.shape[0])}', '-define',
+               'quantum:format=floating-point', '-depth', '64', 'rgb:-', '+profile', 'icc',
+               '-profile',
+               os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'icc',
+                            'BT.601_625-line.icc'), '-define', 'png:color-type=2']
+    if args.output_file.lower().startswith('tiff:') or args.output_file.lower().endswith(
+            '.tif') or args.output_file.lower().endswith('.tiff'):
+        command += ['-compress', 'lzw']
+    command.append(args.output_file)
+    subprocess.run(command, input=outbuf, check=True)
 
 
 if __name__ == "__main__":
