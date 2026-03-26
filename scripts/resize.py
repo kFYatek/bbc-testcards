@@ -12,7 +12,7 @@ import common
 def _main(*args):
     parser = argparse.ArgumentParser(description='Resize an image.')
     parser.add_argument('input_file', type=str,
-                        help='Input file. May be any format supported by PIL or raw{16|float}:[filename@]{width}x{height} - if no filename is specified for raw, it\'s read from stdin.')
+                        help='Input file. May be any format supported by PIL or raw{16|float|f64}:[filename@]{width}x{height} - if no filename is specified for raw, it\'s read from stdin.')
     parser.add_argument('width', type=int, help='Target image width.')
     parser.add_argument('height', type=int, help='Target image height.')
     parser.add_argument('output_file', type=str,

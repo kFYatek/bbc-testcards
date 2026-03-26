@@ -14,7 +14,7 @@ def _main(*args):
     parser = argparse.ArgumentParser(
         description='Convert an initially preprocessed image to a more usable format.')
     parser.add_argument('input_file', type=str,
-                        help='Input file. May be any format supported by PIL or raw{16|float}:[filename@]{width}x{height} - if no filename is specified for raw, it\'s read from stdin.')
+                        help='Input file. May be any format supported by PIL or raw{16|float|f64}:[filename@]{width}x{height} - if no filename is specified for raw, it\'s read from stdin.')
     parser.add_argument('--input-colorspace', type=lambda x: common.ColorSpace(int(x)),
                         help=f'Color space to use when converting input to YUV {list(common.ColorSpace)}. Default is BT.601 for PIL input and YUV for raw input.')
     parser.add_argument('--output-colorspace', type=lambda x: common.ColorSpace(int(x)),

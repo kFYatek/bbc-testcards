@@ -49,8 +49,8 @@ def _main(*args):
     logodata = numpy.ndarray((576, 720, 3), dtype=numpy.float64, buffer=logodata).copy()
 
     # Remove the logos
-    data[447:475, 383:407, :] = 0.5019620433789954
-    data[496:527, 337:452, :] = 0.5019620433789954
+    data[447:475, 383:407] = data[447, 266]
+    data[496:527, 337:452] = data[447, 266]
     fix_arrow_tip(data)
 
     # ==== Copy the good parts ====

@@ -186,16 +186,21 @@ def resample(x: numpy.ndarray, num: int = None, shift: float = 0.0, shift_to_cen
 
 
 def read_image(filename: str, infer_dimensions=None) -> tuple[numpy.ndarray, int]:
-    if filename.startswith('raw16:') or filename.startswith('rawfloat:'):
+    if filename.startswith('raw16:') or filename.startswith('rawfloat:') or filename.startswith(
+            'rawf64:'):
         format, args = filename.split(':', 1)
         if format == 'raw16':
             dtype = numpy.uint16
             range = 65535
             bytes = 6
-        else:
+        elif format == 'rawfloat':
             dtype = numpy.float32
             range = 1
             bytes = 12
+        else:
+            dtype = numpy.float64
+            range = 1
+            bytes = 24
         if '@' in args:
             filename, args = args.split('@', 1)
         else:
