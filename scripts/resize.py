@@ -21,12 +21,12 @@ def _main(*args):
     args = parser.parse_args(args)
 
     data, data_range = common.read_image(args.input_file)
-    if data_range == 1:
-        data = data * 56064.0 + 4096.0
-    elif data_range == 255:
-        data = data * 256.0
+    if data_range == 255:
+        data = (data - 16.0) / 219.0
+    elif data_range == 65535:
+        data = (data - 4096.0) / 56064.0
     else:
-        assert data_range == 65535
+        assert data_range == 1
 
     if args.width != data.shape[1]:
         data = common.resample(data, args.width, shift_to_center=True, axis=1,
@@ -35,12 +35,13 @@ def _main(*args):
         data = common.resample(data, args.height, shift_to_center=True, axis=0,
                                resampler=args.v_resampler, pad_mode='symmetric')
 
-    outbuf = bytearray(2 * numpy.prod(data.shape))
-    output = numpy.ndarray(data.shape, dtype=numpy.uint16, buffer=outbuf)
-    output[:, :, :] = numpy.round(numpy.minimum(numpy.maximum(data, 0.0), 65535.0))
+    outbuf = bytearray(8 * numpy.prod(data.shape))
+    output = numpy.ndarray(data.shape, dtype=numpy.float64, buffer=outbuf)
+    output[:, :, :] = data
 
     subprocess.run(
-        ['magick', '-size', f'{output.shape[1]}x{numpy.prod(output.shape[0])}', '-depth', '16',
+        ['magick', '-size', f'{output.shape[1]}x{numpy.prod(output.shape[0])}', '-define',
+         'quantum:format=floating-point', '-depth', '64',
          {1: 'gray:-', 3: 'rgb:-', 4: 'rgba:-'}[data.shape[2]], args.output_file], input=outbuf,
         check=True)
 
