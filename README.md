@@ -316,13 +316,12 @@ signal limited to lines 48-79 and its chroma information extended onto lines
 
 Restorations fully scripted.
 
-Known issues: the circle mask, while generated in a fashion similar to
-PM5544/PM5534, is not identical. Phase of the frequency gratings not matched to
-the original - but note that the original generators were analogue and each
-known unit was calibrated slightly differently (also applies to other elements
-of the image). Most Test Card G transmissions did not feature the white-on-black
-reflection needle pulse - it can be trivially removed from the image if needed.
-Character generator text is not recreated.
+Known issues: phase of the frequency gratings not matched to the original - but
+note that the original generators were analogue and each known unit was
+calibrated slightly differently (also applies to other elements of the image).
+Most Test Card G transmissions did not feature the white-on-black reflection
+needle pulse - it can be trivially removed from the image if needed. Character
+generator text is not recreated.
 </td>
 </tr>
 <tr>
