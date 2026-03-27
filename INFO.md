@@ -248,7 +248,10 @@ available pictures of the originals.
   * https://tvark.org/bbc2-engineering-test-transmission (square pixels)
   * https://rewind.thetvroom.com/26762/test-cards/bbc-two-test-card-g-bbc-scotland-generator-1980s/
   * https://www.domesday86.com/?page_id=1332 (Jason test-card 5) - sampled at
-    4fSC (17734475 Hz) - not Test Card G, both colors and frequencies are wrong
+    4fSC (17734475 Hz) - a unique version of the Philips pattern, similar to the
+    alleged PAL-D/K version, but with the last frequency grating at 5.4 MHz
+    (instead of 5.63 MHz), as well as the grating amplitude and Anti-PAL section
+    like in Test Card G
 * Wikipedia's recreation at
   https://en.wikipedia.org/wiki/File:PM5544_(Testcard_G_variation).png has many
   inaccuracies, but the frequency gratings seem to be accurate in frequency
