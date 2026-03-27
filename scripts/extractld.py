@@ -115,8 +115,11 @@ def _main(*args):
     parser.add_argument('--hue-shift', type=float, help='Shift, in radians, of the color hue')
     parser.add_argument('--no-vir', action='store_true',
                         help='Do not use the VIR signal for NTSC hue correction')
-    parser.add_argument('--bt601', action='store_true',
-                        help='Use BT.601 sampling rate on output instead of square pixels')
+    format_parser = parser.add_mutually_exclusive_group()
+    format_parser.add_argument('--bt601', action='store_true',
+                               help='Use BT.601 sampling rate on output instead of square pixels')
+    format_parser.add_argument('--raw', action='store_true',
+                               help='Keep 4fSC sampling rate and blanking intervals')
     args = parser.parse_args(args)
 
     with open(args.input_file + '.json') as f:
@@ -225,7 +228,9 @@ def _main(*args):
     else:
         shift = 0.0
 
-    if metadata['videoParameters']['system'] == 'PAL':
+    if args.raw:
+        output = fullcolor
+    elif metadata['videoParameters']['system'] == 'PAL':
         output = fullcolor[44:620]
         if args.bt601:
             output = numpy.pad(output, ((0, 0), (67, 67), (0, 0)), mode='edge')
