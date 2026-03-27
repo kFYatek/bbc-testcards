@@ -61,14 +61,16 @@ def depal(chroma):
 
 
 def apply_vir(luma, chroma):
-    burst_luma = numpy.mean(numpy.mean(luma[23:258, 82:102], axis=-1), axis=-1)
+    burst_luma = numpy.mean(luma[18, 82:102], axis=-1)
     vir_luma = numpy.mean(luma[18, 208:480], axis=-1)
-    vir_angles = numpy.angle(numpy.mean(-chroma[:, 18, 208:480], axis=-1))
-    multipliers = vir_angles / (vir_luma - burst_luma)
-    offsets = (-burst_luma * vir_angles) / (vir_luma - burst_luma)
+    burst_chromas = numpy.mean(chroma[:, 18, 82:102], axis=-1)
+    vir_chromas = numpy.mean(chroma[:, 18, 208:480], axis=-1)
+    correctors = burst_chromas / vir_chromas
+    multipliers = (correctors - 1.0) / (vir_luma - burst_luma)
+    offsets = (vir_luma - burst_luma * correctors) / (vir_luma - burst_luma)
     luma = numpy.tile(luma, (chroma.shape[0], 1, 1)).transpose((1, 2, 0))
-    angle_fixup = (multipliers * luma + offsets).transpose((2, 0, 1))
-    return chroma * numpy.exp(-1.0j * angle_fixup)
+    fixup = (multipliers * luma + offsets).transpose((2, 0, 1))
+    return chroma * fixup
 
 
 def dentsc(luma, chroma, vir=True):
