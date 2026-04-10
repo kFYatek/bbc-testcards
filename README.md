@@ -203,6 +203,11 @@ Restorations fully scripted.
 
 Note that these test cards are clearly modern reproductions. Remaining evidence
 of the originals suggest that they differed slightly, e.g. with the fonts used.
+
+Grating frequencies measured on Test Card A are 12.15% too high (e.g., 2.243 MHz
+instead of 2 MHz) and about 12.5% too high on Test Card B - except the 1 MHz
+grating on Test Card B, which is accurate. The rest of the cards match expected
+geometry.
 </td>
 </tr>
 <tr>
@@ -227,6 +232,9 @@ generator software used FFT-style resampling along both axes and treated only
 376 lines (instead of 378) as active for the 405-line system. Since the original
 test cards were optical, I decided not to replicate this behavior in pursuit of
 better quality.
+
+Grating frequencies are 2.8% too low (e.g. 0.972 MHz instead of 1 MHz). The rest
+of the cards match expected geometry.
 
 Unlike other 405-line test cards provided, these are not pre-blanked.
 </td>
@@ -264,6 +272,8 @@ bottom arrow on the top.
 White line on the very topmost line, visible in images from TVARK, remade.
 
 Restorations fully scripted.
+
+Grating frequencies are about 2.11% too high (e.g. 4.084 MHz instead of 4 MHz).
 </td>
 </tr>
 <tr>
