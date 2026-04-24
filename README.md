@@ -467,8 +467,35 @@ and rendered twice, with an additional stereoscopic BBC logo in the corner.
   means that the images will appear darkened compared to rendering them without
   color management.
 
-Instructions for converting these files to other, more interoperable formats
-will be added here at a later date.
+#### Converting output files to video
+
+The `converty4m.py` script can be used to convert the TIFF files into a Y4M
+video stream (encoded with 4:4:4 12-bit depth to maximize quality), which can
+then be easily converted into more common formats using tools such as FFmpeg.
+
+Example for converting the Test Card G into 10 seconds of H.264 video
+(illustrating the use of multiple frames):
+
+```shell
+./scripts/converty4m.py TestCardG_AP1.tiff TestCardG_AP2.tiff --loop 125 |
+ffmpeg -i - -colorspace bt470bg -vcodec libx264 TestCardG.mp4
+```
+
+Example for converting the widescreen Test Card F variant into 10 seconds of
+DVD-spec video (illustrating the `--aspect169` option):
+
+```shell
+./scripts/converty4m.py TestCardFWide.tiff --loop 250 --aspect169 |
+ffmpeg -i - -colorspace bt470bg -target pal-dvd TestCardFWide.vob
+```
+
+Example for converting the HD test card to 10 seconds of H.264 video
+(illustrating the different color space):
+
+```shell
+./scripts/converty4m.py TestCardX.tiff --loop 250 |
+ffmpeg -i - -colorspace bt709 -vcodec libx264 TestCardX.mp4
+```
 
 #### Other notes
 
