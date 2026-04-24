@@ -3,6 +3,7 @@
 import argparse
 import json
 import math
+import numbers
 import os
 import subprocess
 import sys
@@ -16,11 +17,13 @@ import common
 
 def mean_with_outliers(data, max_delta=0.25):
     result = numpy.mean(data, axis=0)
-    if data.shape[0] > 1:
+    if data.shape[0] > 2 and isinstance(max_delta, numbers.Number) and max_delta >= 0.0:
         deltas = numpy.abs(data - result)
         valid_values = (deltas <= ((max_delta * (data.shape[0] - 1)) / data.shape[0]))
-        result = numpy.sum(data * valid_values, axis=0) / numpy.sum(valid_values, axis=0)
-        result[~numpy.isfinite(result)] = 0.0
+        valid_values_sum = numpy.sum(data * valid_values, axis=0)
+        valid_values_count = numpy.sum(valid_values, axis=0)
+        valid_indices = valid_values_sum > 0
+        result[valid_indices] = valid_values_sum[valid_indices] / valid_values_count[valid_indices]
     return result
 
 
@@ -101,7 +104,7 @@ def _main(*args):
     parser.add_argument('start_frame', type=int, nargs='?',
                         help='CAV frame number of the first frame the image to decode appears on. Default is the first frame of input.')
     parser.add_argument('frame_count', type=int, nargs='?',
-                        help='Number of frames the still image appears on. Must be at least 4. Default is all the frames.')
+                        help='Number of frames the still image appears on. Must be at least 4 for PAL or 2 for NTSC, unless --no-color is specified. Default is all the frames.')
     parser.add_argument('--black-level', type=float,
                         help='Black level (on a 16-bit sample scale) to use instead of the one declared in metadata')
     parser.add_argument('--white-level', type=float,
@@ -112,9 +115,13 @@ def _main(*args):
     parser.add_argument('--v-scale', type=float, help='Multiplier for the V color component')
     parser.add_argument('--shift', type=float,
                         help='Number of samples (at 4fSC, possibly fractional) to shift the image by')
+    parser.add_argument('--max-delta', type=float,
+                        help='Maximum delta for outlier (dropout) detection when averaging frames. Use negative values to disable. Default is 0.25.')
     parser.add_argument('--hue-shift', type=float, help='Shift, in radians, of the color hue')
     parser.add_argument('--no-vir', action='store_true',
                         help='Do not use the VIR signal for NTSC hue correction')
+    parser.add_argument('--no-color', action='store_true',
+                        help='Do not decode chrominance; this allows less than the minimum number of frames to be decoded')
     format_parser = parser.add_mutually_exclusive_group()
     format_parser.add_argument('--bt601', action='store_true',
                                help='Use BT.601 sampling rate on output instead of square pixels')
@@ -173,8 +180,15 @@ def _main(*args):
                          buffer=data)
 
     if data.shape[0] < minframes:
-        raise Exception(
-            f"This script requires at least {minframes} frames to operate in {metadata['videoParameters']['system']} mode")
+        if args.no_color:
+            minframes = 1
+        else:
+            raise Exception(
+                f"This script requires at least {minframes} frames to operate in {metadata['videoParameters']['system']} mode")
+
+    max_delta = args.max_delta
+    if max_delta is None and minframes > 1:
+        max_delta = 0.25
 
     if args.black_level is not None:
         black_level = args.black_level
@@ -192,27 +206,32 @@ def _main(*args):
 
     data = numpy.ndarray((minframes, inp.shape[1], inp.shape[2]))
     for i in range(minframes):
-        data[i, :] = mean_with_outliers(inp[i::minframes])
+        data[i, :] = mean_with_outliers(inp[i::minframes], max_delta)
 
     luma = numpy.mean(data, axis=0)
 
-    chroma = deqam(data - luma)
-    if metadata['videoParameters']['system'] == 'PAL':
-        chroma = depal(chroma)
+    if args.no_color:
+        chroma = 0.0 * luma
     else:
-        chroma = dentsc(luma, chroma, not args.no_vir)
+        chroma = deqam(data - luma)
+        if metadata['videoParameters']['system'] == 'PAL':
+            chroma = depal(chroma)
+        else:
+            chroma = dentsc(luma, chroma, not args.no_vir)
 
-    chroma = numpy.mean(chroma, axis=0)
+        chroma = numpy.mean(chroma, axis=0)
+
     luma = deinterlace(luma)
     chroma = deinterlace(chroma)
 
-    if metadata['videoParameters']['system'] == 'PAL':
-        chroma *= (3.0 / (14.0 * numpy.abs(numpy.mean(chroma[48:616, 108:128]))))
-    else:
-        chroma *= (1.0 / (5.0 * numpy.abs(numpy.mean(chroma[46:516, 82:102]))))
+    if not args.no_color:
+        if metadata['videoParameters']['system'] == 'PAL':
+            chroma *= (3.0 / (14.0 * numpy.abs(numpy.mean(chroma[48:616, 108:128]))))
+        else:
+            chroma *= (1.0 / (5.0 * numpy.abs(numpy.mean(chroma[46:516, 82:102]))))
 
-    if args.hue_shift is not None:
-        chroma *= numpy.exp(1.0j * args.hue_shift)
+        if args.hue_shift is not None:
+            chroma *= numpy.exp(1.0j * args.hue_shift)
 
     fullcolor = numpy.ndarray((luma.shape[0], luma.shape[1], 3))
     fullcolor[:, :, 0] = luma
