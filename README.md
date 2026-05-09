@@ -44,40 +44,20 @@ To run the scripts, you will need:
       [CrossOver](https://www.codeweavers.com/crossover) (for macOS) or
       [Hangover](https://github.com/AndreRH/hangover) (for Linux on ARM).
 
-For example, on Ubuntu 25.10 x86_64 (note: running on older versions, including
-LTS, may be problematic because VapourSynth requires very new dependencies), you
-can run the following commands to install all the prerequisites:
+For example, on Ubuntu 26.04 x86_64 (note: running on older versions may be
+problematic because VapourSynth requires very new dependencies), you can run the
+following commands to install all the prerequisites:
 
 ```shell
 sudo dpkg --add-architecture i386
 sudo apt update
-sudo apt install \
-    curl cython3 git imagemagick libavformat-dev libplacebo-dev libzimg-dev \
-    meson pkgconf python3-dev python3-matplotlib python3-pip unzip wine32
-
-git clone --recursive https://github.com/vapoursynth/vapoursynth.git -b R73
-(cd vapoursynth && meson setup build && ninja -C build)
-sudo ninja -C vapoursynth/build install
-sudo ldconfig
-sudo mkdir -p /usr/local/lib/$(uname -m)-linux-gnu/vapoursynth
-python3 -m pip install --break-system-packages ./vapoursynth
-
-git clone --recursive https://github.com/vapoursynth/bestsource.git
-(cd bestsource && meson setup build && ninja -C build)
-sudo install \
-    bestsource/build/libbestsource.so \
-    /usr/local/lib/$(uname -m)-linux-gnu/vapoursynth/
-
-git clone --recursive https://github.com/Lypheo/vs-placebo.git
-# This may be necessary for running in virtual machines:
-sed -i -e 's/vp = pl_vulkan_default_params;/\0 vp.allow_software = 1;/' \
-    vs-placebo/src/vs-placebo.c
-(cd vs-placebo && meson setup build && ninja -C build)
-sudo ninja -C vs-placebo/build install
-
-git clone --recursive https://github.com/Irrational-Encoding-Wizardry/descale.git
-(cd descale && meson setup build && ninja -C build)
-sudo ninja -C descale/build install
+sudo apt install curl git imagemagick libpython3.14 mesa-vulkan-drivers \
+    python3-matplotlib python3-scipy python3-venv unzip wine32
+# Vapoursynth will be installed in a Python virtualenv
+python3 -m venv .venv --system-site-packages
+. .venv/bin/activate
+pip install vapoursynth-bestsource vapoursynth-descale vs-placebo
+vapoursynth config
 ```
 
 On macOS, install [Homebrew](https://brew.sh/) first, and then run:
@@ -85,9 +65,12 @@ On macOS, install [Homebrew](https://brew.sh/) first, and then run:
 ```shell
 brew install \
     cmake imagemagick libplacebo meson molten-vk pkgconf python-matplotlib \
-    scipy vapoursynth-bestsource vapoursynth-descale gcenx/wine/wine-crossover
+    scipy vapoursynth-bestsource vapoursynth-descale wine-stable
+xattr -cr '/Applications/Wine Stable.app'
 git clone --recursive https://github.com/Lypheo/vs-placebo.git
-(cd vs-placebo && meson setup build && ninja -C build)
+(cd vs-placebo && git checkout 1408380 && \
+    git submodule update --init --recursive && \
+    meson setup build && ninja -C build)
 install vs-placebo/build/libvs_placebo.dylib /opt/homebrew/lib/vapoursynth/
 
 # On Apple Silicon you'll also need to install Rosetta 2:

@@ -46,7 +46,7 @@ env CARD=5 SCALE=1 SCALER=lanczos ANTIRING=1 vspipe "$SCRIPTDIR/extract.vpy" - |
 for CARD in C D; do
     "$SCRIPTDIR/resize.py" "$SCRIPTDIR/../sources/Test Card $CARD.gif" 720 468 tiff:- \
         --resampler hybrid \
-    | magick tiff:- \
+    | magick tiff:- -define quantum:format=floating-point -depth 64 \
         -filter Point -resize 7200x468\! -filter Gaussian -resize 7200x378\! \
         -filter Point -resize 720x378\! \
         +profile icc -profile "$SCRIPTDIR/../icc/ITU-1886-gray.icc" -compress lzw \
@@ -58,7 +58,8 @@ TMPIMAGE="$(mktemp)"
 TMPFILES="$TMPFILES $TMPIMAGE"
 env CARD=2 SCALE=0 vspipe "$SCRIPTDIR/extract.vpy" - \
 | "$SCRIPTDIR/convert.py" --output-colorspace 1 rawfloat: tiff:- \
-| magick tiff:- -crop 1400x1080+260+0 -filter Lanczos -resize 844x595\! \
+| magick tiff:- -define quantum:format=floating-point -depth 64 \
+    -crop 1400x1080+260+0 -filter Lanczos -resize 844x595\! \
     -evaluate Add 7.30593607305936% -evaluate Multiply 0.9798462330650822 -evaluate Pow 1.15 \
     -evaluate Add -7.30593607305936% -evaluate Max 0.0% tiff:"$TMPIMAGE"
 magick "$SCRIPTDIR/../sources/d0bfa1fd2a9191224e10dafe9d9fc321dc254d80.jpg" \
@@ -68,7 +69,7 @@ magick "$SCRIPTDIR/../sources/d0bfa1fd2a9191224e10dafe9d9fc321dc254d80.jpg" \
 | magick tiff:"$TMPIMAGE" tiff:- -geometry +41+9 -composite -define quantum:format=floating-point \
     -depth 64 rgb:- \
 | "$SCRIPTDIR/resize.py" rawf64:844x595 720 595 tiff:- --resampler hybrid \
-| magick tiff:- \
+| magick tiff:- -define quantum:format=floating-point -depth 64 \
     -filter Point -resize 7200x595\! -filter Gaussian -resize 7200x378\! \
     -filter Point -resize 720x378\! \
     +profile icc -profile "$SCRIPTDIR/../icc/ITU-1886-gray.icc" -compress lzw \
@@ -79,30 +80,37 @@ env CARD=8 SCALE=1 SCALER=lanczos ANTIRING=2 vspipe "$SCRIPTDIR/extract.vpy" - \
 | "$SCRIPTDIR/convert.py" --card 8 --scale 2 --resampler hybrid rawfloat: tiff:"$TMPIMAGE"
 CARDIMAGE="$(mktemp)"
 TMPFILES="$TMPFILES $CARDIMAGE"
-magick tiff:"$TMPIMAGE" -crop 720x1+0+26 -filter Point -resize 720x2\! tiff:- \
-| magick tiff:"$TMPIMAGE" -crop 720x552+0+24 \
-    tiff:- -geometry +0+0 -composite tiff:"$CARDIMAGE"
-magick tiff:"$TMPIMAGE" -crop 31x4+344+548 -flip tiff:- \
-| magick tiff:"$CARDIMAGE" tiff:- -geometry +344+0 -composite tiff:"$CARDIMAGE"
-magick tiff:"$TMPIMAGE" -crop 720x14+0+6 -filter Box -resize 720x1\! -filter Box -resize 720x23\! \
+magick tiff:"$TMPIMAGE" -define quantum:format=floating-point -depth 64 \
+    -crop 720x1+0+26 -filter Point -resize 720x2\! tiff:- \
+| magick tiff:"$TMPIMAGE" -define quantum:format=floating-point -depth 64 \
+    -crop 720x552+0+24 tiff:- -geometry +0+0 -composite tiff:"$CARDIMAGE"
+magick tiff:"$TMPIMAGE" -define quantum:format=floating-point -depth 64 \
+    -crop 31x4+344+548 -flip tiff:- \
+| magick tiff:"$CARDIMAGE" tiff:- -geometry +344+0 -composite \
+    -define quantum:format=floating-point -depth 64 tiff:"$CARDIMAGE"
+magick tiff:"$TMPIMAGE" -define quantum:format=floating-point -depth 64 \
+    -crop 720x14+0+6 -filter Box -resize 720x1\! -filter Box -resize 720x23\! \
     tiff:"$TMPIMAGE"
 "$SCRIPTDIR/tcfopt_firstline.py" \
 | magick -size 720x1 -define quantum:format=floating-point -depth 64 gray:- \
     tiff:"$TMPIMAGE" -append tiff:"$CARDIMAGE" -append \
     +profile icc -profile "$SCRIPTDIR/../icc/BT.601_625-line.icc" \
-    -compress lzw "$OUTDIR/TestCardFOpt.tiff"
+    -compress lzw -define quantum:format=floating-point -depth 64 \
+    "$OUTDIR/TestCardFOpt.tiff"
 
 # Recreation of the electronic Test Card F
 env CARD=9 SCALE=3 vspipe "$SCRIPTDIR/extract.vpy" - \
 | "$SCRIPTDIR/convert.py" rawfloat: tiff:- \
-| magick tiff: "$SCRIPTDIR/../sources/TestCardFElec_reconstruction.tiff" -composite tiff:- \
+| magick tiff:- "$SCRIPTDIR/../sources/TestCardFElec_reconstruction.tiff" -composite \
+    -define quantum:format=floating-point -depth 64 tiff:- \
 | magick tiff:- \
     +profile icc -profile "$SCRIPTDIR/../icc/BT.601_625-line.icc" \
-    -compress lzw "$OUTDIR/TestCardFElec-788.tiff"
+    -compress lzw -define quantum:format=floating-point -depth 64 \
+    "$OUTDIR/TestCardFElec-788.tiff"
 magick "$OUTDIR/TestCardFElec-788.tiff" -bordercolor black -border 118x0 \
     -define quantum:format=floating-point -depth 64 rgb:- \
 | "$SCRIPTDIR/resize.py" rawf64:1024x576 936 576 tiff:- --resampler hybrid \
-| magick tiff:- \
+| magick tiff:- -define quantum:format=floating-point -depth 64 \
     -crop 720x576+108+0 +profile icc -profile "$SCRIPTDIR/../icc/BT.601_625-line.icc" \
     -compress lzw "$OUTDIR/TestCardFElec.tiff"
 
