@@ -22,7 +22,7 @@ def _main(*args):
 
     with zipfile.ZipFile(
             os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'sources',
-                         '8633vid_dat.zip')) as archive:
+                         'CHAN33.ZIP')) as archive:
         fulldata = []
         for ch in (1, 2, 3):
             with archive.open(f'CHANNEL{ch}.DAT') as f:
@@ -173,11 +173,11 @@ def _main(*args):
     outdata_ap = numpy.zeros((2, *outdata.shape))
     outdata_ap[0] = outdata
     outdata_ap[1] = outdata
-    outdata_ap[0, 58:140, 48:80, :] = fulldata[288:370, 48:80, :]
-    outdata_ap[1, 58:140, 48:80, :] = fulldata[864:946, 48:80, :]
-    outdata_ap[:, 98:100, 48:80, 1:] = outdata_ap[:, 94:96, 48:80, 1:]
-    outdata_ap[:, 58:140, 0:48, 1:] = outdata_ap[0:1, 56:57, 0:48, 0:1] * outdata_ap[
-        :, 58:140, 48:49, 1:]
+    outdata_ap[0, 58:140, :80, :] = fulldata[288:370, :80, :]
+    outdata_ap[1, 58:140, :80, :] = fulldata[864:946, :80, :]
+    outdata_ap[:, 58:98, :80, 1:] = outdata_ap[::-1, 100:140, :80, 1:]
+    outdata_ap[:, 98:100, :80, 1:] = outdata_ap[:, 94:96, :80, 1:]
+    outdata_ap[:, 58:140, 24:48, 1:] = outdata_ap[:, 58:140, 48:49, 1:]
 
     rgbdata = numpy.matvec(common.ColorSpace.BT601.to_rgb_matrix, outdata_ap)
 

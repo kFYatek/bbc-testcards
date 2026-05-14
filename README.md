@@ -104,7 +104,7 @@ This will download:
   [tvark.org](https://tvark.org/branding/bbc/bbc-tv/bbc-tv-1936)
 * Test patterns developed for the PTV PT5230 / PT8633 test pattern generator, as
   found in
-  [Karsten Hansen's PTV archive on GitHub](https://github.com/KarstenHervoeHansen/PTV/blob/main/PT5230/PT8633/video_data/8633vid_dat.zip)
+  [Karsten Hansen's PTV archive on GitHub](https://github.com/KarstenHervoeHansen/PTV/blob/main/PT5230/Back-up_PTV_brandskab/PT5210_5230%20generator%20sw/PT8633/Disk%201/CHAN33.ZIP)
 
 #### Regenerating the test cards
 
@@ -425,7 +425,7 @@ and rendered twice, with an additional stereoscopic BBC logo in the corner.
    [Barney Wol's archived website](https://web.archive.org/web/20120320034954/http://www.barney-wol.net/video/testcardf/testcardf.html)
 5. Test patterns developed for the PTV PT5230 / PT8633 test pattern generator,
    as found in
-   [Karsten Hansen's PTV archive on GitHub](https://github.com/KarstenHervoeHansen/PTV/blob/main/PT5230/PT8633/video_data/8633vid_dat.zip)
+   [Karsten Hansen's PTV archive on GitHub](https://github.com/KarstenHervoeHansen/PTV/blob/main/PT5230/Back-up_PTV_brandskab/PT5210_5230%20generator%20sw/PT8633/Disk%201/CHAN33.ZIP)
 
 #### File format description
 
