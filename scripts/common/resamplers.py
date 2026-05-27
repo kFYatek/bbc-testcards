@@ -158,7 +158,7 @@ class HybridResampler:
             mean_input = numpy.pad(x, [(0, 0)] * (len(x.shape) - 1) + [(0, mean_size)], mode='wrap')
             for i in range(oldsize):
                 means[..., (i + mean_size // 2) % oldsize] = numpy.mean(
-                    mean_input[..., x.shape[-1] - i:x.shape[-1] - i + mean_size], axis=-1)
+                    mean_input[..., i:i + mean_size], axis=-1)
             lo_samples = numpy.float64(numpy.abs(x - means) < self.threshold)
             lo_samples = LinearResampler()(lo_samples, num, shift, -1)
             lo_samples = 0.5 - 0.5 * numpy.cos(lo_samples * numpy.pi)
