@@ -228,12 +228,11 @@ if dimensions is not None:
     src_width = dimensions.precrop_w
     src_height = clip.height
     scaler_h_kwargs = {}
+    if dimensions.scale_w == dimensions.precrop_w:
+        src_left = 0
     if SCALER_H[0:2] == 'de':
         scaler_h = getattr(vapoursynth.core.descale, SCALER_H[0].upper() + SCALER_H[1:])
-        if dimensions.scale_w == dimensions.precrop_w:
-            src_left = 0
-        else:
-            src_left *= -dimensions.scale_w / dimensions.precrop_w
+        src_left *= -dimensions.scale_w / dimensions.precrop_w
         src_width = None
         scaler_h_kwargs = {'src_left': src_left}
     else:
@@ -241,12 +240,11 @@ if dimensions is not None:
         scaler_h_kwargs = {'filter': SCALER_H, 'sx': src_left}
         if ANTIRING != 0:
             scaler_h_kwargs['antiring'] = ANTIRING
+    if dimensions.scale_h == clip.height:
+        src_top = 0
     if SCALER_V[0:2] == 'de':
         scaler_v = getattr(vapoursynth.core.descale, SCALER_V[0].upper() + SCALER_V[1:])
-        if dimensions.scale_h == clip.height:
-            src_top = 0
-        else:
-            src_top *= -dimensions.scale_h / clip.height
+        src_top *= -dimensions.scale_h / clip.height
         src_height = None
         scaler_v_kwargs = {'src_top': src_top}
     else:
