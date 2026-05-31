@@ -461,7 +461,8 @@ Example for converting the Test Card G into 10 seconds of H.264 video
 
 ```shell
 ./scripts/converty4m.py TestCardG_AP1.tiff TestCardG_AP2.tiff --loop 125 |
-ffmpeg -i - -colorspace bt470bg -vcodec libx264 TestCardG.mp4
+ffmpeg -i - -vf colorspace=iall=bt601-6-625:all=bt601-6-625 -vcodec libx264 \
+TestCardG.mp4
 ```
 
 Example for converting the widescreen Test Card F variant into 10 seconds of
@@ -469,7 +470,8 @@ DVD-spec video (illustrating the `--aspect169` option):
 
 ```shell
 ./scripts/converty4m.py TestCardFWide.tiff --loop 250 --aspect169 |
-ffmpeg -i - -colorspace bt470bg -target pal-dvd TestCardFWide.vob
+ffmpeg -i - -vf colorspace=iall=bt601-6-625:all=bt601-6-625 -target pal-dvd \
+TestCardFWide.vob
 ```
 
 Example for converting the HD test card to 10 seconds of H.264 video
@@ -477,7 +479,7 @@ Example for converting the HD test card to 10 seconds of H.264 video
 
 ```shell
 ./scripts/converty4m.py TestCardX.tiff --loop 250 |
-ffmpeg -i - -colorspace bt709 -vcodec libx264 TestCardX.mp4
+ffmpeg -i - -vf colorspace=iall=bt709:all=bt709 -vcodec libx264 TestCardX.mp4
 ```
 
 #### Other notes

@@ -42,7 +42,7 @@ def _main(*args):
 
     frames = numpy.stack(frames).transpose((0, 3, 1, 2))
 
-    if frames.shape[1] >= 720:
+    if frames.shape[2] >= 720:
         colorspace = common.ColorSpace.BT709
     else:
         colorspace = common.ColorSpace.BT601
