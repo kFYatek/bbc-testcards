@@ -64,14 +64,10 @@ On macOS, install [Homebrew](https://brew.sh/) first, and then run:
 
 ```shell
 brew install \
-    cmake imagemagick libplacebo meson molten-vk pkgconf python-matplotlib \
-    scipy vapoursynth-bestsource vapoursynth-descale wine-stable
+    imagemagick molten-vk python-matplotlib scipy vapoursynth-bestsource \
+    vapoursynth-descale wine-stable
 xattr -cr '/Applications/Wine Stable.app'
-git clone --recursive https://github.com/Lypheo/vs-placebo.git
-(cd vs-placebo && git checkout 1408380 && \
-    git submodule update --init --recursive && \
-    meson setup build && ninja -C build)
-install vs-placebo/build/libvs_placebo.dylib /opt/homebrew/lib/vapoursynth/
+python3 -m pip install --break-system-packages vs-placebo
 
 # On Apple Silicon you'll also need to install Rosetta 2:
 softwareupdate --install-rosetta --agree-to-license
